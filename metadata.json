@@ -1,0 +1,6 @@
+{
+  "name": "AgriChain - Supply Chain Compiler",
+  "description": "An intermediary-neutral agricultural supply-chain operating system that dynamically constructs and compares optimal supply-chain configurations for farmers.",
+  "requestFramePermissions": ["microphone"],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
