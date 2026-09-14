@@ -35,6 +35,8 @@ import { useAuth } from '../../context/AuthContext';
 import { AccountMenu } from '../../components/AccountMenu';
 import { supabase } from '../../lib/supabase';
 import { BulkRequirement } from '../../../../shared/types';
+import { useOrders } from '../../hooks/useOrders';
+import { fetchWithAuth } from '../../services/apiFetch';
 
 interface AvailableFarmProduce {
   id: string;
@@ -241,36 +243,41 @@ export const ConsumerDashboardPage: React.FC = () => {
   const [reqSubmitting, setReqSubmitting] = useState(false);
 
   // Active Orders
-  const [activeOrders, setActiveOrders] = useState<ActiveBulkOrder[]>([
-    {
-      id: 'ORD-901',
-      orderNumber: 'AGRI-BULK-2026-901',
-      crop: 'Tomato (Hybrid Shivam)',
-      quantity: '200 KG',
-      totalAmount: 3500,
-      farmerName: 'Ramesh Patel (Sanwer Cluster)',
-      dispatchHub: 'Sanwer Farmgate Point 4',
-      status: 'In Transit',
-      eta: 'Today, 2:30 PM (45 mins away)',
-      transporterName: 'Gurpreet Singh (Express AgriLogistics)',
-      transporterPhone: '+91 98260 12345',
-      vehicleNumber: 'MP-09-GH-4412 (Tata 407 Temp Controlled)'
-    },
-    {
-      id: 'ORD-902',
-      orderNumber: 'AGRI-BULK-2026-894',
-      crop: 'Red Onion (Nashik Medium)',
-      quantity: '500 KG',
-      totalAmount: 10500,
-      farmerName: 'Hatod Progressive Farmers Group',
-      dispatchHub: 'Hatod Village Depot',
-      status: 'Delivered',
-      eta: 'Delivered Yesterday at 6:45 PM',
-      transporterName: 'Kailash Verma Transport',
-      transporterPhone: '+91 98265 67890',
-      vehicleNumber: 'MP-09-AB-7890'
+  // Orders integration
+  const { orders: activeOrders, loading: ordersLoading, refreshOrders } = useOrders();
+
+  const handleConfirmOrder = async () => {
+    if (!selectedProduce) return;
+
+    try {
+      const res = await fetchWithAuth('/api/orders', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          crop: `${selectedProduce.crop} (${selectedProduce.variety})`,
+          quantity_kg: orderQuantity,
+          agreed_price_per_kg: selectedProduce.pricePerUnit,
+          pickup_location: selectedProduce.farmLocation,
+          delivery_location: orderDeliveryAddress,
+        })
+      });
+
+      if (res.ok) {
+        setOrderSuccessMsg(`Successfully booked ${orderQuantity} ${selectedProduce.unit} of ${selectedProduce.crop}! Order confirmed with Escrow Protection.`);
+        refreshOrders();
+        setTimeout(() => {
+          setSelectedProduce(null);
+          setOrderSuccessMsg(null);
+          handleTabChange('Orders');
+        }, 2000);
+      } else {
+        const err = await res.json();
+        setOrderSuccessMsg(`Failed to place order: ${err?.error?.message || 'Unknown error'}`);
+      }
+    } catch (e: any) {
+      setOrderSuccessMsg(`Error: ${e.message}`);
     }
-  ]);
+  };
 
   // Load requirements from Supabase if table exists
   useEffect(() => {
@@ -360,35 +367,6 @@ export const ConsumerDashboardPage: React.FC = () => {
     setSelectedProduce(produce);
     setOrderQuantity(produce.minOrderQty);
     setOrderSuccessMsg(null);
-  };
-
-  const handleConfirmOrder = () => {
-    if (!selectedProduce) return;
-
-    const totalAmt = Math.round(orderQuantity * selectedProduce.pricePerUnit);
-    const newOrder: ActiveBulkOrder = {
-      id: `ORD-${Date.now().toString().slice(-4)}`,
-      orderNumber: `AGRI-BULK-2026-${Math.floor(100 + Math.random() * 900)}`,
-      crop: `${selectedProduce.crop} (${selectedProduce.variety})`,
-      quantity: `${orderQuantity} ${selectedProduce.unit}`,
-      totalAmount: totalAmt,
-      farmerName: selectedProduce.farmerName,
-      dispatchHub: selectedProduce.farmLocation,
-      status: 'Order Placed',
-      eta: 'Dispatch scheduled within 4 hours',
-      transporterName: 'AgriChain Direct Express Fleet',
-      transporterPhone: '+91 98260 00000',
-      vehicleNumber: 'Vehicle Assignment Pending'
-    };
-
-    setActiveOrders(prev => [newOrder, ...prev]);
-    setOrderSuccessMsg(`Successfully booked ${orderQuantity} ${selectedProduce.unit} of ${selectedProduce.crop}! Order #${newOrder.orderNumber} confirmed with Escrow Protection.`);
-
-    setTimeout(() => {
-      setSelectedProduce(null);
-      setOrderSuccessMsg(null);
-      handleTabChange('Orders');
-    }, 2000);
   };
 
   const handleLogout = async () => {
@@ -948,7 +926,8 @@ export const ConsumerDashboardPage: React.FC = () => {
               </div>
 
               <div className="space-y-3 pt-2">
-                {activeOrders.map((order) => (
+                {ordersLoading && <div className="p-4 text-center text-sm text-slate-500">Loading orders...</div>}
+                {activeOrders.map((order: any) => (
                   <div 
                     key={order.id}
                     className="p-5 bg-slate-50 rounded-2xl border border-slate-200 space-y-3"
@@ -957,17 +936,17 @@ export const ConsumerDashboardPage: React.FC = () => {
                       <div>
                         <div className="flex items-center gap-2">
                           <span className="text-sm font-black text-slate-900 font-display">{order.crop}</span>
-                          <span className="text-xs font-bold text-slate-500 font-mono">#{order.orderNumber}</span>
+                          <span className="text-xs font-bold text-slate-500 font-mono">#{order.id.slice(0, 8)}</span>
                         </div>
-                        <p className="text-xs text-slate-500 mt-0.5">Dispatched from {order.farmerName} • {order.dispatchHub}</p>
+                        <p className="text-xs text-slate-500 mt-0.5">Dispatched from {order.pickup_location || 'Unknown Hub'}</p>
                       </div>
 
                       <div className="text-right">
                         <span className="text-base font-black text-emerald-700 font-display block">
-                          ₹{order.totalAmount.toLocaleString()}
+                          ₹{Number(order.total_amount).toLocaleString()}
                         </span>
                         <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full inline-block ${
-                          order.status === 'Delivered' ? 'bg-emerald-100 text-emerald-800' : 'bg-blue-100 text-blue-800'
+                          order.status === 'DELIVERED' || order.status === 'COMPLETED' ? 'bg-emerald-100 text-emerald-800' : 'bg-blue-100 text-blue-800'
                         }`}>
                           {order.status}
                         </span>
@@ -976,19 +955,16 @@ export const ConsumerDashboardPage: React.FC = () => {
 
                     <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 text-xs">
                       <div>
-                        <span className="text-slate-400 block text-[10px] uppercase font-bold">Transporter</span>
-                        <span className="font-semibold text-slate-800">{order.transporterName}</span>
-                        <span className="text-slate-500 block text-[11px]">{order.transporterPhone}</span>
+                        <span className="text-slate-400 block text-[10px] uppercase font-bold">Qty</span>
+                        <span className="font-semibold text-slate-800">{order.quantity_kg} kg</span>
                       </div>
-
                       <div>
-                        <span className="text-slate-400 block text-[10px] uppercase font-bold">Vehicle</span>
-                        <span className="font-semibold text-slate-800 font-mono">{order.vehicleNumber}</span>
+                        <span className="text-slate-400 block text-[10px] uppercase font-bold">ETA / Schedule</span>
+                        <span className="font-semibold text-slate-800">{order.expected_delivery_at ? new Date(order.expected_delivery_at).toLocaleString() : 'Pending'}</span>
                       </div>
-
                       <div>
                         <span className="text-slate-400 block text-[10px] uppercase font-bold">Delivery Status</span>
-                        <span className="font-semibold text-indigo-700">{order.eta}</span>
+                        <span className="font-semibold text-indigo-700">{order.status}</span>
                       </div>
                     </div>
 

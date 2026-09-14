@@ -13,6 +13,8 @@ import adminRoutes from './admin.routes';
 import offerRoutes from "./offer.routes";
 import serviceProviderRoutes from './serviceProvider.routes';
 import priceRoutes from './price.routes';
+import governmentRoutes from './government.routes';
+import orderRoutes from './order.routes';
 
 const router = Router();
 
@@ -29,5 +31,7 @@ router.use('/calls', callsRoutes);
 router.use('/dashboard/admin', adminRoutes);
 router.use('/service-providers', serviceProviderRoutes);
 router.use('/prices', priceRoutes);
+router.use('/government', governmentRoutes);
+router.use('/orders', orderRoutes);
 
 export default router;

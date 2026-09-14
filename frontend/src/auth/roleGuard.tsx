@@ -77,6 +77,21 @@ export const ROLE_CONFIG: Record<ThreeRole, {
       border: 'border-indigo-200',
       text: 'text-indigo-700'
     }
+  },
+  government_admin: {
+    name: 'Government Admin',
+    badge: '🏛️ Government Admin',
+    tagline: 'Supply chain monitoring and insights',
+    icon: 'Landmark',
+    dashboardPath: '/government',
+    loginPath: '/login/government',
+    registerPath: '/register/government',
+    colorScheme: {
+      primary: 'bg-slate-800 hover:bg-slate-900 text-white',
+      bgLight: 'bg-slate-100 text-slate-800',
+      border: 'border-slate-300',
+      text: 'text-slate-800'
+    }
   }
 };
 

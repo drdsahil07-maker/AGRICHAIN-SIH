@@ -21,6 +21,7 @@ import {
 } from 'lucide-react';
 import { authService } from '../../auth/authService';
 import { AccountMenu } from '../../components/AccountMenu';
+import { useOrders } from '../../hooks/useOrders';
 
 interface AvailableLoadItem {
   id: string;
@@ -51,6 +52,9 @@ export const TransporterDashboardPage: React.FC = () => {
   const [capacity, setCapacity] = useState('1500 KG');
   const [departureTime, setDepartureTime] = useState('Today, 4:00 PM');
   const [publishedTrips, setPublishedTrips] = useState<number>(1);
+
+  // Assigned Orders via real API
+  const { orders: assignedOrders, loading: assignedOrdersLoading, refreshOrders } = useOrders();
 
   // Available Loads according to prompt requirements
   const [loadsList] = useState<AvailableLoadItem[]>([
@@ -283,6 +287,58 @@ export const TransporterDashboardPage: React.FC = () => {
             <div className="text-[11px] font-bold text-slate-400 uppercase tracking-wider">Total Earnings</div>
             <div className="text-2xl sm:text-3xl font-black text-emerald-700 font-display mt-1">₹68,450</div>
             <div className="text-[11px] text-emerald-700 font-semibold mt-1">Settled automatically to UPI</div>
+          </div>
+        </div>
+
+        {/* ASSIGNED ORDERS */}
+        <div className="bg-white rounded-3xl border border-slate-200 shadow-xs overflow-hidden mb-6">
+          <div className="p-5 sm:p-6 border-b border-slate-100 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+            <div>
+              <h2 className="text-lg sm:text-xl font-black text-slate-900 font-display flex items-center gap-2">
+                <Truck className="w-5 h-5 text-indigo-600" /> My Assigned Orders
+              </h2>
+              <p className="text-xs text-slate-500 mt-0.5">
+                Orders attached to your currently assigned transport trips.
+              </p>
+            </div>
+            <button onClick={refreshOrders} className="text-xs text-indigo-600 hover:text-indigo-800 font-bold px-3 py-1 rounded-full bg-indigo-50 border border-indigo-100">
+              Refresh
+            </button>
+          </div>
+          <div className="p-5 sm:p-6 space-y-4">
+            {assignedOrdersLoading && <p className="text-sm text-slate-500">Loading assigned orders...</p>}
+            {!assignedOrdersLoading && assignedOrders.length === 0 && (
+              <div className="text-center py-6 text-slate-500 text-sm">
+                You have no active orders assigned to you right now.
+              </div>
+            )}
+            {assignedOrders.map((order: any) => (
+              <div key={order.id} className="border border-slate-200 rounded-xl bg-slate-50 p-4">
+                <div className="flex flex-col sm:flex-row justify-between sm:items-center gap-4 border-b border-slate-200 pb-3 mb-3">
+                  <div>
+                    <h3 className="font-bold text-slate-900">{order.crop} - {order.quantity_kg} kg</h3>
+                    <p className="text-xs text-slate-500 font-mono">Order ID: #{order.id.slice(0, 8)}</p>
+                  </div>
+                  <div className="text-right">
+                    <span className={`inline-block px-2.5 py-1 text-xs font-bold rounded-lg ${
+                      order.status === 'DELIVERED' || order.status === 'COMPLETED' ? 'bg-emerald-100 text-emerald-800' : 'bg-blue-100 text-blue-800'
+                    }`}>
+                      {order.status}
+                    </span>
+                  </div>
+                </div>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-xs">
+                  <div>
+                    <span className="text-[10px] text-slate-400 font-bold uppercase block mb-1">Pickup</span>
+                    <span className="text-slate-800">{order.pickup_location}</span>
+                  </div>
+                  <div>
+                    <span className="text-[10px] text-slate-400 font-bold uppercase block mb-1">Delivery</span>
+                    <span className="text-slate-800">{order.delivery_location}</span>
+                  </div>
+                </div>
+              </div>
+            ))}
           </div>
         </div>
 

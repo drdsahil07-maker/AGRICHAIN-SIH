@@ -241,7 +241,7 @@ export interface PriceBenchmark {
   isDemoData?: boolean;
 }
 
-export type ThreeRole = 'farmer' | 'distributor' | 'transporter' | 'consumer';
+export type ThreeRole = 'farmer' | 'distributor' | 'transporter' | 'consumer' | 'government_admin';
 export type AppUserRole = 'farmer' | 'distributor' | 'transporter' | 'consumer' | 'buyer' | 'admin' | 'government_admin';
 
 export interface DatabaseUserRecord {
@@ -465,3 +465,42 @@ export interface ConsumerOrder {
   created_at: string;
 }
 
+
+export type OrderStatus = 'CREATED' | 'CONFIRMED' | 'POOLING' | 'TRANSPORT_ASSIGNED' | 'PICKUP_READY' | 'PICKED_UP' | 'IN_TRANSIT' | 'DELIVERED' | 'COMPLETED' | 'CANCELLED';
+
+export interface Order {
+  id: string;
+  pool_id?: string;
+  buyer_id: string;
+  crop: string;
+  quantity_kg: number;
+  agreed_price_per_kg: number;
+  total_amount: number;
+  farmer_net_value: number;
+  pickup_location: string;
+  delivery_location: string;
+  transport_trip_id?: string;
+  status: OrderStatus;
+  expected_delivery_at?: string;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface OrderStatusHistory {
+  id: string;
+  order_id: string;
+  old_status?: OrderStatus;
+  new_status: OrderStatus;
+  changed_by?: string;
+  changed_at: string;
+}
+
+export interface AppNotification {
+  id: string;
+  user_id: string;
+  type: string;
+  message: string;
+  reference_id?: string;
+  is_read: boolean;
+  created_at: string;
+}

@@ -41,14 +41,16 @@ export const AccountMenu: React.FC<AccountMenuProps> = ({ className = '' }) => {
     farmer: 'Farmer',
     distributor: 'Distributor',
     transporter: 'Transporter',
-    consumer: 'Consumer / Bulk Buyer'
+    consumer: 'Consumer / Bulk Buyer',
+    government_admin: 'Government Admin'
   };
 
   const roleColorMap: Record<ThreeRole, string> = {
     farmer: 'bg-emerald-600',
     distributor: 'bg-amber-600',
     transporter: 'bg-blue-600',
-    consumer: 'bg-indigo-600'
+    consumer: 'bg-indigo-600',
+    government_admin: 'bg-slate-600'
   };
 
   const handleProfileClick = () => {

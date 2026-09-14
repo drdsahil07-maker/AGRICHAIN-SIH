@@ -37,12 +37,16 @@ import { AIFarmerCallModal } from '../../components/AIFarmerCallModal';
 import { QualityVerificationView } from '../../components/QualityVerificationView';
 import { DynamicPoolingView } from '../../components/DynamicPoolingView';
 import { AccountMenu } from '../../components/AccountMenu';
+import { useOrders } from '../../hooks/useOrders';
 
 export const FarmerDashboardPage: React.FC = () => {
   const navigate = useNavigate();
   const user = authService.getCurrentUser();
   const [activeTab, setActiveTab] = useState<string>('Dashboard');
   const [harvests, setHarvests] = useState<Harvest[]>(SEED_HARVESTS);
+
+  // Orders integration
+  const { orders, loading: ordersLoading, refreshOrders } = useOrders();
 
   // Modals
   const [showSellModal, setShowSellModal] = useState(false);
@@ -514,6 +518,52 @@ export const FarmerDashboardPage: React.FC = () => {
               <span className="text-slate-400 block text-[10px]">Logistics Savings</span>
               <span className="font-bold text-emerald-700 text-sm">₹1.40 / KG saved</span>
             </div>
+          </div>
+        </div>
+
+        {/* ACTIVE ORDERS */}
+        <div className="bg-white rounded-3xl p-5 sm:p-6 border border-slate-200 shadow-xs">
+          <div className="flex items-center justify-between mb-4">
+            <div>
+              <h3 className="text-base font-bold text-slate-900 font-display">My Orders</h3>
+              <p className="text-xs text-slate-500">Live status of your committed produce and logistics.</p>
+            </div>
+            <button onClick={refreshOrders} className="text-xs text-indigo-600 hover:text-indigo-800 font-bold px-3 py-1 rounded-full bg-indigo-50 border border-indigo-100">
+              Refresh
+            </button>
+          </div>
+          
+          <div className="space-y-3">
+            {ordersLoading && <p className="text-xs text-slate-500">Loading orders...</p>}
+            {!ordersLoading && orders.length === 0 && <p className="text-xs text-slate-500">No active orders found.</p>}
+            
+            {orders.map((order: any) => (
+              <div key={order.id} className="p-4 border border-slate-200 rounded-xl bg-slate-50 flex flex-col sm:flex-row justify-between gap-4">
+                <div>
+                  <div className="flex items-center gap-2 mb-1">
+                    <span className="font-bold text-slate-900 text-sm">{order.crop}</span>
+                    <span className="text-[10px] font-mono text-slate-500">#{order.id.slice(0, 8)}</span>
+                  </div>
+                  <div className="text-xs text-slate-600">
+                    <span className="font-semibold text-slate-800">{order.quantity_kg} kg</span> sold to {order.delivery_location.substring(0, 20)}...
+                  </div>
+                </div>
+                
+                <div className="text-right flex flex-col justify-between">
+                  <div>
+                    <div className="text-[10px] text-slate-400 font-bold uppercase">Expected Net Value</div>
+                    <div className="text-lg font-black text-emerald-700 font-mono">₹{Number(order.farmer_net_value).toLocaleString()}</div>
+                  </div>
+                  <div className="mt-2">
+                    <span className={`text-[10px] font-bold px-2 py-1 rounded-full ${
+                      order.status === 'DELIVERED' || order.status === 'COMPLETED' ? 'bg-emerald-100 text-emerald-800' : 'bg-blue-100 text-blue-800'
+                    }`}>
+                      {order.status}
+                    </span>
+                  </div>
+                </div>
+              </div>
+            ))}
           </div>
         </div>
 

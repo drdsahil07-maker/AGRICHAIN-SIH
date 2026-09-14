@@ -23,6 +23,7 @@ import { TransporterDashboardPage } from './pages/transporter/TransporterDashboa
 import { ConsumerDashboardPage } from './pages/consumer/ConsumerDashboardPage';
 import { ProfilePage } from './pages/ProfilePage';
 import { ForgotPassword } from './pages/auth/ForgotPassword';
+import { GovernmentDashboard } from './pages/admin/GovernmentDashboard';
 import { ProtectedRoute } from './auth/ProtectedRoute';
 
 createRoot(document.getElementById('root')!).render(
@@ -50,6 +51,13 @@ createRoot(document.getElementById('root')!).render(
           {/* Password Reset */}
           <Route path="/forgot-password" element={<ForgotPassword />} />
           <Route path="/reset-password" element={<ForgotPassword />} />
+
+          {/* Government Admin Route */}
+          <Route path="/government" element={
+            <ProtectedRoute requiredRole="government_admin">
+              <GovernmentDashboard />
+            </ProtectedRoute>
+          } />
 
           {/* Protected Profile Page */}
           <Route

@@ -277,7 +277,8 @@ export const authService = {
           farmer: 'Farmer',
           distributor: 'Distributor',
           transporter: 'Transporter',
-          consumer: 'Consumer / Bulk Buyer'
+          consumer: 'Consumer / Bulk Buyer',
+          government_admin: 'Government Admin'
         };
         return {
           success: false,
