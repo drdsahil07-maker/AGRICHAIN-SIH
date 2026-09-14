@@ -17,11 +17,10 @@ function aistudioMediaPlugin(): Plugin {
             const relativePath = decodedPath.replace(/^\//, '');
             const aistudioDir = path.resolve(
               __dirname,
-              'public',
-              'assets',
+              'frontend', 'public', 'assets',
               'aistudio',
             );
-            const filePath = path.resolve(__dirname, 'public', relativePath);
+            const filePath = path.resolve(__dirname, 'frontend', 'public', relativePath);
             if (
               filePath.startsWith(aistudioDir + path.sep) &&
               fs.existsSync(filePath) &&
@@ -77,6 +76,11 @@ export default defineConfig(() => {
   const supabaseAnonKey = (process.env.VITE_SUPABASE_ANON_KEY || 'sb_publishable_JA52E1ro6ibUVSm5Bb3G1Q_mqRuKJ6l').replace(/^=+/, '').trim();
 
   return {
+    root: 'frontend',
+    build: {
+      outDir: '../dist',
+      emptyOutDir: true,
+    },
     plugins: [react(), tailwindcss(), aistudioMediaPlugin()],
     define: {
       'import.meta.env.VITE_SUPABASE_URL': JSON.stringify(supabaseUrl),
