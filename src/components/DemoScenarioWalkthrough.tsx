@@ -88,7 +88,7 @@ export const DemoScenarioWalkthrough: React.FC<DemoScenarioWalkthroughProps> = (
   return (
     <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 space-y-8">
       
-      {/* Hero Presentation Header */}
+      {/* Scenario Walkthrough Header */}
       <div className="bg-gradient-to-br from-slate-900 via-slate-800 to-indigo-950 text-white rounded-3xl p-6 sm:p-8 border border-slate-700 shadow-xl space-y-4">
         <div className="inline-flex items-center gap-2 bg-indigo-500/20 text-indigo-300 px-3 py-1 rounded-full text-xs font-semibold border border-indigo-500/30">
           <Sparkles className="w-3.5 h-3.5" />

@@ -19,6 +19,20 @@ import { QualityGrade } from "./src/types";
 
 dotenv.config();
 
+// Sanitize any malformed environment variables injected with leading '=' or quotes
+if (process.env.VITE_SUPABASE_URL) {
+  let cleaned = process.env.VITE_SUPABASE_URL.trim();
+  while (cleaned.startsWith('=')) cleaned = cleaned.slice(1).trim();
+  if (cleaned.startsWith('"') && cleaned.endsWith('"')) cleaned = cleaned.slice(1, -1).trim();
+  process.env.VITE_SUPABASE_URL = cleaned;
+}
+if (process.env.VITE_SUPABASE_ANON_KEY) {
+  let cleaned = process.env.VITE_SUPABASE_ANON_KEY.trim();
+  while (cleaned.startsWith('=')) cleaned = cleaned.slice(1).trim();
+  if (cleaned.startsWith('"') && cleaned.endsWith('"')) cleaned = cleaned.slice(1, -1).trim();
+  process.env.VITE_SUPABASE_ANON_KEY = cleaned;
+}
+
 // In-memory data store for the live server session
 let harvests = [...SEED_HARVESTS];
 let pools = [...SEED_POOLS];

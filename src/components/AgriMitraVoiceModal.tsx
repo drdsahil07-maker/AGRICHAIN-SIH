@@ -200,10 +200,10 @@ export const AgriMitraVoiceModal: React.FC<AgriMitraVoiceModalProps> = ({
           </div>
         )}
 
-        {/* Quick Demo Voice Commands for Judges */}
+        {/* Quick Voice Command Samples */}
         <div className="space-y-2">
           <span className="text-[11px] font-bold text-slate-500 uppercase tracking-wider block">
-            Judge Quick Test Prompts (Simulate Voice Input):
+            Quick Test Prompts (Simulate Voice Input):
           </span>
           <div className="space-y-2">
             {SAMPLE_VOICE_COMMANDS.map((cmd, idx) => (

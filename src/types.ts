@@ -238,3 +238,228 @@ export interface PriceBenchmark {
   lastUpdated: string;
   source: string;
 }
+
+export type ThreeRole = 'farmer' | 'distributor' | 'transporter' | 'consumer';
+export type AppUserRole = 'farmer' | 'distributor' | 'transporter' | 'consumer' | 'buyer' | 'admin';
+
+export interface DatabaseUserRecord {
+  uid: string;
+  userId?: string;
+  name: string;
+  email: string;
+  phone: string;
+  role: ThreeRole;
+  profileComplete: boolean;
+  createdAt: string;
+  lastLoginAt: string;
+}
+
+export interface FarmerProfileRecord {
+  uid: string;
+  userId?: string;
+  name: string;
+  phone: string;
+  village: string;
+  district: string;
+  state: string;
+  crops: string;
+  mainCrops?: string;
+  createdAt: string;
+  updatedAt?: string;
+}
+
+export interface DistributorProfileRecord {
+  uid: string;
+  userId?: string;
+  businessName: string;
+  ownerName: string;
+  phone: string;
+  email: string;
+  businessType: string;
+  city: string;
+  state: string;
+  cropsInterestedIn: string;
+  createdAt: string;
+  updatedAt?: string;
+}
+
+export interface TransporterProfileRecord {
+  uid: string;
+  userId?: string;
+  name: string;
+  phone: string;
+  vehicleNumber: string;
+  vehicleType: string;
+  vehicleCapacity: string;
+  currentLocation: string;
+  preferredRoutes: string;
+  createdAt: string;
+  updatedAt?: string;
+}
+
+export interface ConsumerProfileRecord {
+  uid: string;
+  userId?: string;
+  businessName: string;
+  ownerName: string;
+  phone: string;
+  email: string;
+  businessType: string;
+  city: string;
+  state: string;
+  requiredCrops: string[];
+  typicalQuantity: number;
+  quantityFrequency: string;
+  createdAt: string;
+  updatedAt?: string;
+}
+
+export interface AuthSessionUser {
+  uid: string;
+  userId: string;
+  name: string;
+  role: ThreeRole;
+  lastLoginAt: string;
+  phone?: string;
+  email?: string;
+  location?: string;
+  details?: Record<string, any>;
+}
+
+export interface UserProfile {
+  uid: string;
+  email: string;
+  displayName: string;
+  role: AppUserRole;
+  phone?: string;
+  location?: string;
+  trustScore?: number;
+  createdAt: string;
+  updatedAt?: string;
+}
+
+// Supabase Database Models
+export interface SupabaseProfile {
+  id: string;
+  full_name: string;
+  email: string | null;
+  phone: string | null;
+  role: ThreeRole;
+  created_at: string;
+  updated_at: string;
+  last_login_at: string | null;
+}
+
+export interface SupabaseFarmerProfile {
+  id: string;
+  village: string | null;
+  district: string | null;
+  state: string | null;
+  crops: string[];
+  created_at: string;
+  updated_at: string;
+}
+
+export interface SupabaseDistributorProfile {
+  id: string;
+  business_name: string | null;
+  owner_name: string | null;
+  business_type: string | null;
+  city: string | null;
+  state: string | null;
+  crops_interested_in: string[];
+  created_at: string;
+  updated_at: string;
+}
+
+export interface SupabaseTransporterProfile {
+  id: string;
+  vehicle_number: string | null;
+  vehicle_type: string | null;
+  vehicle_capacity: number;
+  current_location: string | null;
+  preferred_routes: string[];
+  created_at: string;
+  updated_at: string;
+}
+
+export interface SupabaseConsumerProfile {
+  id: string;
+  business_name: string | null;
+  owner_name: string | null;
+  business_type: string | null;
+  city: string | null;
+  state: string | null;
+  required_crops: string[];
+  typical_quantity: number | null;
+  quantity_frequency: string | null;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface CombinedUserProfile extends SupabaseProfile {
+  farmer?: SupabaseFarmerProfile;
+  distributor?: SupabaseDistributorProfile;
+  transporter?: SupabaseTransporterProfile;
+  consumer?: SupabaseConsumerProfile;
+}
+
+export interface BulkRequirement {
+  id: string;
+  consumer_id: string;
+  consumer_name?: string;
+  business_name?: string;
+  crop: string;
+  variety?: string;
+  quantity: number;
+  unit: string;
+  quality?: string;
+  quality_grade?: string;
+  required_by?: string;
+  delivery_location: string;
+  city?: string;
+  state?: string;
+  target_price?: number;
+  frequency: string;
+  notes?: string;
+  status: 'open' | 'offers_received' | 'matched' | 'accepted' | 'fulfilled' | 'cancelled';
+  created_at: string;
+  updated_at: string;
+  offers_count?: number;
+}
+
+export interface RequirementOffer {
+  id: string;
+  requirement_id: string;
+  supplier_id: string;
+  supplier_name: string;
+  supplier_type: 'farmer' | 'distributor';
+  price_per_kg: number;
+  available_quantity: number;
+  quality: string;
+  distance_km: number;
+  estimated_delivery: string;
+  reliability_score: number;
+  status: 'pending' | 'accepted' | 'rejected';
+  created_at: string;
+}
+
+export interface ConsumerOrder {
+  id: string;
+  consumer_id: string;
+  requirement_id?: string;
+  crop: string;
+  quantity: number;
+  unit: string;
+  supplier_name: string;
+  supplier_type: 'farmer' | 'distributor';
+  price_per_unit: number;
+  transport_name: string;
+  transport_fee: number;
+  total_amount: number;
+  status: 'Order Placed' | 'Supplier Confirmed' | 'Transport Pending' | 'Transport Matched' | 'Out for Delivery' | 'Delivered' | 'Completed';
+  delivery_address: string;
+  estimated_delivery: string;
+  created_at: string;
+}
+

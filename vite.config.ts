@@ -64,9 +64,24 @@ function aistudioMediaPlugin(): Plugin {
 }
 // LINT.ThenChange(//depot/google3/java/com/google/alkali/boq/makersuite/applet_dev_service/templates/initializers/react_theme/vite.config.ts:aistudio_media_plugin)
 
+// Sanitize any malformed environment variables with leading '=' or quotes
+if (process.env.VITE_SUPABASE_URL) {
+  process.env.VITE_SUPABASE_URL = process.env.VITE_SUPABASE_URL.replace(/^=+/, '').trim();
+}
+if (process.env.VITE_SUPABASE_ANON_KEY) {
+  process.env.VITE_SUPABASE_ANON_KEY = process.env.VITE_SUPABASE_ANON_KEY.replace(/^=+/, '').trim();
+}
+
 export default defineConfig(() => {
+  const supabaseUrl = (process.env.VITE_SUPABASE_URL || 'https://abjhusvnynwvjbiwtxho.supabase.co').replace(/^=+/, '').trim();
+  const supabaseAnonKey = (process.env.VITE_SUPABASE_ANON_KEY || 'sb_publishable_JA52E1ro6ibUVSm5Bb3G1Q_mqRuKJ6l').replace(/^=+/, '').trim();
+
   return {
     plugins: [react(), tailwindcss(), aistudioMediaPlugin()],
+    define: {
+      'import.meta.env.VITE_SUPABASE_URL': JSON.stringify(supabaseUrl),
+      'import.meta.env.VITE_SUPABASE_ANON_KEY': JSON.stringify(supabaseAnonKey),
+    },
     resolve: {
       alias: {
         '@': path.resolve(__dirname, '.'),

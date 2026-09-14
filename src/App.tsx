@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Navbar } from './components/Navbar';
 import { CompilerView } from './components/CompilerView';
 import { FarmerDashboard } from './components/FarmerDashboard';
@@ -10,17 +10,21 @@ import { CorridorMapView } from './components/CorridorMapView';
 import { EscrowSettlementView } from './components/EscrowSettlementView';
 import { LandingOverview } from './components/LandingOverview';
 import { CallRecordsView } from './components/CallRecordsView';
+import { AdminCommandCenter } from './components/AdminCommandCenter';
 
 // Modals
 import { AgriMitraVoiceModal } from './components/AgriMitraVoiceModal';
 import { AIFarmerCallModal } from './components/AIFarmerCallModal';
 import { AssistedAccessModal } from './components/AssistedAccessModal';
 import { SellHarvestModal } from './components/SellHarvestModal';
+import { AuthModal } from './components/AuthModal';
 
 import { Harvest, ChainOption, QualityGrade } from './types';
 import { SEED_HARVESTS } from './data/seedData';
+import { useAuth } from './context/AuthContext';
 
 export default function App() {
+  const { isAuthModalOpen, setIsAuthModalOpen, role } = useAuth();
   const [currentTab, setCurrentTab] = useState<string>('landing');
   const [activeHarvests, setActiveHarvests] = useState<Harvest[]>(SEED_HARVESTS);
   
@@ -63,7 +67,7 @@ export default function App() {
     };
 
     setActiveHarvests((prev) => [newHarvest, ...prev]);
-    showNotification(`✓ Harvest declared: ${data.quantityKg} kg ${data.crop} (Min ₹${data.minAcceptablePrice}/kg). Best supply chain compiled!`);
+    showNotification(`✓ Harvest saved: ${data.quantityKg} kg ${data.crop} (Min ₹${data.minAcceptablePrice}/kg). Supply chain route compiled!`);
     setCurrentTab('compiler');
   };
 
@@ -174,6 +178,10 @@ export default function App() {
         {currentTab === 'escrow' && (
           <EscrowSettlementView />
         )}
+
+        {currentTab === 'admin' && (
+          <AdminCommandCenter />
+        )}
       </main>
 
       {/* Enterprise Business Footer */}
@@ -225,6 +233,12 @@ export default function App() {
         isOpen={isSellOpen}
         onClose={() => setIsSellOpen(false)}
         onSubmitHarvest={handleHarvestCreated}
+      />
+
+      {/* Role-Based Authentication Modal */}
+      <AuthModal
+        isOpen={isAuthModalOpen}
+        onClose={() => setIsAuthModalOpen(false)}
       />
 
     </div>

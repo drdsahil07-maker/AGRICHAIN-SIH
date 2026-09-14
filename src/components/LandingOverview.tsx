@@ -1,4 +1,5 @@
 import React from 'react';
+import { useNavigate } from 'react-router-dom';
 import { 
   Plus, 
   ArrowRight, 
@@ -12,13 +13,18 @@ import {
   Navigation, 
   Play, 
   CheckCircle2, 
-  Truck,
+  Truck, 
   Sparkles,
-  ChevronRight
+  ChevronRight,
+  Store,
+  Sprout,
+  ShieldCheck,
+  Zap
 } from 'lucide-react';
 import { getStoredCallRecords } from '../data/callRecords';
 import { AgriMap } from './AgriMap';
 import { callAudio } from '../utils/callAudio';
+import { authService } from '../auth/authService';
 
 interface LandingOverviewProps {
   onNavigateTab: (tab: string) => void;
@@ -32,7 +38,12 @@ export const LandingOverview: React.FC<LandingOverviewProps> = ({
   onOpenCall,
   onOpenSellModal,
 }) => {
+  const navigate = useNavigate();
   const recentCalls = getStoredCallRecords().slice(0, 3);
+
+  const handlePortalNavigate = (role: 'farmer' | 'distributor' | 'transporter') => {
+    navigate(`/login/${role}`);
+  };
 
   // Sample recent active listings for Ramesh Patel
   const activeOrders = [
@@ -74,6 +85,220 @@ export const LandingOverview: React.FC<LandingOverviewProps> = ({
   return (
     <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6 space-y-8">
       
+      {/* Role-Based Quick Access & Portal Entry */}
+      <div className="bg-slate-900 text-white rounded-3xl p-5 sm:p-6 shadow-sm border border-slate-800 space-y-4">
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+          <div className="flex items-center gap-3">
+            <div className="w-10 h-10 rounded-2xl bg-emerald-500/20 text-emerald-400 flex items-center justify-center font-black text-sm border border-emerald-500/30">
+              AC
+            </div>
+            <div>
+              <div className="flex items-center gap-2">
+                <span className="text-sm font-black tracking-tight text-white font-display">AgriChain</span>
+                <span className="bg-emerald-500/20 text-emerald-300 text-[10px] font-extrabold px-2 py-0.5 rounded border border-emerald-500/30">
+                  Connect. Trade. Deliver.
+                </span>
+              </div>
+              <p className="text-xs text-slate-400 mt-0.5">
+                Transparent Agricultural Value Chain &amp; Logistics Platform
+              </p>
+            </div>
+          </div>
+
+          {/* Quick Role Portal Buttons */}
+          <div className="flex items-center gap-2 flex-wrap">
+            <span className="text-[11px] font-bold text-slate-400 uppercase tracking-wider mr-1">
+              Select Portal:
+            </span>
+            <button
+              type="button"
+              onClick={() => handlePortalNavigate('farmer')}
+              className="px-3 py-1.5 bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold rounded-xl shadow-xs transition-transform active:scale-95 cursor-pointer"
+            >
+              Farmer Portal
+            </button>
+            <button
+              type="button"
+              onClick={() => handlePortalNavigate('distributor')}
+              className="px-3 py-1.5 bg-amber-600 hover:bg-amber-700 text-white text-xs font-bold rounded-xl shadow-xs transition-transform active:scale-95 cursor-pointer"
+            >
+              Distributor Portal
+            </button>
+            <button
+              type="button"
+              onClick={() => handlePortalNavigate('transporter')}
+              className="px-3 py-1.5 bg-blue-600 hover:bg-blue-700 text-white text-xs font-bold rounded-xl shadow-xs transition-transform active:scale-95 cursor-pointer"
+            >
+              Transporter Portal
+            </button>
+          </div>
+        </div>
+      </div>
+
+      {/* 2. "CONTINUE AS" THREE-ROLE SECTION (Requested) */}
+      <section className="space-y-4">
+        <div className="flex flex-col sm:flex-row sm:items-end justify-between gap-2">
+          <div>
+            <div className="text-xs font-bold text-emerald-700 uppercase tracking-wider flex items-center gap-1.5">
+              <Sparkles className="w-3.5 h-3.5" />
+              <span>AgriChain Platform</span>
+            </div>
+            <h2 className="text-2xl sm:text-3xl font-black text-slate-900 tracking-tight font-display mt-0.5">
+              Connect. Trade. Deliver.
+            </h2>
+            <p className="text-xs text-slate-500">
+              Select your role to access transparent pricing, direct purchasing, or verified loads.
+            </p>
+          </div>
+          <div className="text-xs text-slate-500 font-medium italic">
+            &ldquo;We don&apos;t remove the middleman. We remove the mystery around the middleman.&rdquo;
+          </div>
+        </div>
+
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-5">
+          {/* ROLE CARD 1: FARMER */}
+          <div className="bg-white rounded-3xl p-6 border-2 border-emerald-200/90 shadow-xs hover:border-emerald-400 hover:shadow-md transition-all flex flex-col justify-between space-y-5 group">
+            <div className="space-y-3">
+              <div className="flex items-center justify-between">
+                <div className="w-14 h-14 rounded-2xl bg-emerald-50 text-emerald-700 border border-emerald-200 flex items-center justify-center group-hover:scale-105 transition-transform">
+                  <Sprout className="w-7 h-7" />
+                </div>
+                <span className="text-xl font-bold">🌾</span>
+              </div>
+              <div>
+                <h3 className="text-xl font-black text-slate-900 font-display">Farmer</h3>
+                <p className="text-xs text-slate-600 font-medium mt-1 leading-relaxed">
+                  Sell your produce with transparent pricing
+                </p>
+              </div>
+              <div className="text-[11px] text-emerald-700 bg-emerald-50/80 p-2.5 rounded-xl border border-emerald-100">
+                Formula: Farmer Net Value = Buyer Price - Transport Cost - Service Cost - Expected Loss
+              </div>
+            </div>
+
+            <div className="space-y-2 pt-2 border-t border-slate-100">
+              <button
+                type="button"
+                onClick={() => navigate('/login/farmer')}
+                className="w-full py-2.5 px-3 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl text-xs font-bold transition-all shadow-xs active:scale-95 cursor-pointer text-center"
+              >
+                Continue as Farmer
+              </button>
+              <div className="flex items-center justify-between text-xs px-1">
+                <button
+                  type="button"
+                  onClick={() => navigate('/login/farmer')}
+                  className="text-slate-500 hover:text-emerald-700 font-medium cursor-pointer"
+                >
+                  Login
+                </button>
+                <button
+                  type="button"
+                  onClick={() => navigate('/register/farmer')}
+                  className="text-emerald-700 hover:underline font-bold cursor-pointer"
+                >
+                  Create Account
+                </button>
+              </div>
+            </div>
+          </div>
+
+          {/* ROLE CARD 2: DISTRIBUTOR */}
+          <div className="bg-white rounded-3xl p-6 border-2 border-amber-200/90 shadow-xs hover:border-amber-400 hover:shadow-md transition-all flex flex-col justify-between space-y-5 group">
+            <div className="space-y-3">
+              <div className="flex items-center justify-between">
+                <div className="w-14 h-14 rounded-2xl bg-amber-50 text-amber-700 border border-amber-200 flex items-center justify-center group-hover:scale-105 transition-transform">
+                  <Store className="w-7 h-7" />
+                </div>
+                <span className="text-xl font-bold">🏪</span>
+              </div>
+              <div>
+                <h3 className="text-xl font-black text-slate-900 font-display">Distributor</h3>
+                <p className="text-xs text-slate-600 font-medium mt-1 leading-relaxed">
+                  Source produce and manage purchases
+                </p>
+              </div>
+              <div className="text-[11px] text-amber-800 bg-amber-50/80 p-2.5 rounded-xl border border-amber-100">
+                Wholesalers, food processors, and institutional buyers with direct escrow contracts.
+              </div>
+            </div>
+
+            <div className="space-y-2 pt-2 border-t border-slate-100">
+              <button
+                type="button"
+                onClick={() => navigate('/login/distributor')}
+                className="w-full py-2.5 px-3 bg-amber-600 hover:bg-amber-700 text-white rounded-xl text-xs font-bold transition-all shadow-xs active:scale-95 cursor-pointer text-center"
+              >
+                Continue as Distributor
+              </button>
+              <div className="flex items-center justify-between text-xs px-1">
+                <button
+                  type="button"
+                  onClick={() => navigate('/login/distributor')}
+                  className="text-slate-500 hover:text-amber-700 font-medium cursor-pointer"
+                >
+                  Login
+                </button>
+                <button
+                  type="button"
+                  onClick={() => navigate('/register/distributor')}
+                  className="text-amber-700 hover:underline font-bold cursor-pointer"
+                >
+                  Create Account
+                </button>
+              </div>
+            </div>
+          </div>
+
+          {/* ROLE CARD 3: TRANSPORTER */}
+          <div className="bg-white rounded-3xl p-6 border-2 border-blue-200/90 shadow-xs hover:border-blue-400 hover:shadow-md transition-all flex flex-col justify-between space-y-5 group">
+            <div className="space-y-3">
+              <div className="flex items-center justify-between">
+                <div className="w-14 h-14 rounded-2xl bg-blue-50 text-blue-700 border border-blue-200 flex items-center justify-center group-hover:scale-105 transition-transform">
+                  <Truck className="w-7 h-7" />
+                </div>
+                <span className="text-xl font-bold">🚚</span>
+              </div>
+              <div>
+                <h3 className="text-xl font-black text-slate-900 font-display">Transporter</h3>
+                <p className="text-xs text-slate-600 font-medium mt-1 leading-relaxed">
+                  Find loads and manage deliveries
+                </p>
+              </div>
+              <div className="text-[11px] text-blue-800 bg-blue-50/80 p-2.5 rounded-xl border border-blue-100">
+                Monetize empty return trips with pre-weighed farmgate pickup loads along active corridors.
+              </div>
+            </div>
+
+            <div className="space-y-2 pt-2 border-t border-slate-100">
+              <button
+                type="button"
+                onClick={() => navigate('/login/transporter')}
+                className="w-full py-2.5 px-3 bg-blue-600 hover:bg-blue-700 text-white rounded-xl text-xs font-bold transition-all shadow-xs active:scale-95 cursor-pointer text-center"
+              >
+                Continue as Transporter
+              </button>
+              <div className="flex items-center justify-between text-xs px-1">
+                <button
+                  type="button"
+                  onClick={() => navigate('/login/transporter')}
+                  className="text-slate-500 hover:text-blue-700 font-medium cursor-pointer"
+                >
+                  Login
+                </button>
+                <button
+                  type="button"
+                  onClick={() => navigate('/register/transporter')}
+                  className="text-blue-700 hover:underline font-bold cursor-pointer"
+                >
+                  Create Account
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+
       {/* 1. Hero Section (Clean, Calm, Action-Oriented) */}
       <div className="bg-white rounded-3xl p-6 sm:p-8 border border-slate-200/90 shadow-xs flex flex-col md:flex-row md:items-center justify-between gap-6">
         <div className="space-y-1.5 max-w-xl">

@@ -13,8 +13,12 @@ import {
   User,
   Menu,
   X,
-  Sparkles
+  Sparkles,
+  Shield,
+  KeyRound
 } from 'lucide-react';
+import { useAuth } from '../context/AuthContext';
+import { AccountMenu } from './AccountMenu';
 
 interface NavbarProps {
   currentTab: string;
@@ -30,6 +34,7 @@ export const Navbar: React.FC<NavbarProps> = ({
   onSelectTab,
   onOpenCall,
 }) => {
+  const { userProfile, role, setIsAuthModalOpen } = useAuth();
   const [isMoreOpen, setIsMoreOpen] = useState(false);
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
 
@@ -47,6 +52,7 @@ export const Navbar: React.FC<NavbarProps> = ({
     { id: 'transporter', label: 'Backhaul Fleet', icon: Truck },
     { id: 'escrow', label: 'Escrow Settlement', icon: QrCode },
     { id: 'quality', label: 'Quality Scan', icon: Camera },
+    { id: 'admin', label: 'Admin Console', icon: Shield },
   ];
 
   return (
@@ -69,9 +75,12 @@ export const Navbar: React.FC<NavbarProps> = ({
                 <span className="font-extrabold text-xl tracking-tight text-slate-900 font-display">
                   AGRICHAIN
                 </span>
-                <span className="inline-flex items-center gap-1 text-[11px] font-semibold text-emerald-700 bg-emerald-50 px-2 py-0.5 rounded-full border border-emerald-200">
+                <span 
+                  title="Supabase Connected: abjhusvnynwvjbiwtxho"
+                  className="inline-flex items-center gap-1 text-[11px] font-semibold text-emerald-700 bg-emerald-50 px-2 py-0.5 rounded-full border border-emerald-200"
+                >
                   <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse"></span>
-                  Online
+                  Supabase Live
                 </span>
               </div>
             </button>
@@ -159,7 +168,7 @@ export const Navbar: React.FC<NavbarProps> = ({
             </div>
           </nav>
 
-          {/* Action Area: AI Assistant Call & Profile */}
+          {/* Action Area: AI Assistant Call & Account Switcher */}
           <div className="flex items-center gap-2.5">
             <button
               id="btn-call-farmer"
@@ -171,19 +180,8 @@ export const Navbar: React.FC<NavbarProps> = ({
               <span>AI Farmer Call</span>
             </button>
 
-            {/* Profile Avatar */}
-            <div 
-              onClick={() => onSelectTab('farmer')}
-              className="flex items-center gap-2 p-1 pl-1.5 pr-2.5 rounded-full border border-slate-200 hover:bg-slate-50 cursor-pointer transition-colors"
-              title="Ramesh Patel (Farmer Profile)"
-            >
-              <div className="w-7 h-7 rounded-full bg-slate-900 text-white flex items-center justify-center font-bold text-xs">
-                RP
-              </div>
-              <span className="hidden sm:inline text-xs font-semibold text-slate-800">
-                Ramesh
-              </span>
-            </div>
+            {/* Account / Easy Role Switcher Menu */}
+            <AccountMenu />
 
             {/* Mobile Menu Toggle */}
             <button
@@ -200,8 +198,30 @@ export const Navbar: React.FC<NavbarProps> = ({
 
       {/* Mobile Dropdown Menu (Clean & Non-Overflowing) */}
       {isMobileMenuOpen && (
-        <div className="md:hidden border-t border-slate-200 bg-white px-4 py-3 space-y-1 animate-in slide-in-from-top-2 duration-150">
-          <div className="text-[11px] font-bold text-slate-400 uppercase px-3 py-1">Menu</div>
+        <div className="md:hidden border-t border-slate-200 bg-white px-4 py-3 space-y-2 animate-in slide-in-from-top-2 duration-150">
+          <div className="p-3 bg-slate-50 rounded-xl border border-slate-200 flex items-center justify-between">
+            <div className="flex items-center gap-2">
+              <div className="w-8 h-8 rounded-full bg-slate-900 text-white flex items-center justify-center font-bold text-xs">
+                {userProfile.displayName.split(' ').map(n => n[0]).join('').slice(0, 2)}
+              </div>
+              <div className="text-left">
+                <span className="text-xs font-bold text-slate-900 block">{userProfile.displayName}</span>
+                <span className="text-[10px] text-emerald-700 font-bold uppercase">{userProfile.role}</span>
+              </div>
+            </div>
+            <button
+              type="button"
+              onClick={() => {
+                setIsMobileMenuOpen(false);
+                setIsAuthModalOpen(true);
+              }}
+              className="px-2.5 py-1 bg-emerald-600 text-white text-xs font-bold rounded-lg cursor-pointer"
+            >
+              Switch Role
+            </button>
+          </div>
+
+          <div className="text-[11px] font-bold text-slate-400 uppercase px-1 py-0.5">Navigation Menu</div>
           {[...mainTabs, ...secondaryTabs].map((tab) => {
             const Icon = tab.icon;
             const isActive = currentTab === tab.id;

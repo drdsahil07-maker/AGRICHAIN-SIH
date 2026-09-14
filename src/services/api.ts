@@ -82,19 +82,6 @@ export const api = {
   },
 
   async createHarvest(payload: Partial<Harvest>): Promise<Harvest> {
-    try {
-      const res = await fetch('/api/harvests', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(payload),
-      });
-      if (res.ok) {
-        const data = await res.json();
-        return data.harvest;
-      }
-    } catch (e) {
-      console.warn('Create harvest API fallback:', e);
-    }
     const newH: Harvest = {
       id: `AC-HRV-2026-${Math.floor(1000 + Math.random() * 9000)}`,
       farmerId: 'f-1',
@@ -109,6 +96,20 @@ export const api = {
       status: 'compiled',
       createdAt: new Date().toISOString(),
     };
+
+    try {
+      const res = await fetch('/api/harvests', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload),
+      });
+      if (res.ok) {
+        const data = await res.json();
+        return data.harvest;
+      }
+    } catch (e) {
+      console.warn('Create harvest API fallback:', e);
+    }
     return newH;
   },
 
@@ -139,20 +140,7 @@ export const api = {
   },
 
   async createBackhaulTrip(trip: Partial<BackhaulTrip>): Promise<BackhaulTrip> {
-    try {
-      const res = await fetch('/api/transporters/backhaul', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(trip),
-      });
-      if (res.ok) {
-        const data = await res.json();
-        return data.trip;
-      }
-    } catch (e) {
-      console.warn('Backhaul create fallback:', e);
-    }
-    return {
+    const newTrip: BackhaulTrip = {
       id: `bh-${Date.now()}`,
       transporterId: 'tr-1',
       transporterName: trip.transporterName || 'Jagdish Yadav',
@@ -168,6 +156,21 @@ export const api = {
       savingEstimate: 1600,
       status: 'open',
     };
+
+    try {
+      const res = await fetch('/api/transporters/backhaul', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(trip),
+      });
+      if (res.ok) {
+        const data = await res.json();
+        return data.trip;
+      }
+    } catch (e) {
+      console.warn('Backhaul create fallback:', e);
+    }
+    return newTrip;
   },
 
   async getBuyerDemands(): Promise<BuyerDemand[]> {
