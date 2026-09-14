@@ -1,8 +1,10 @@
 import React, { useState, useEffect } from 'react';
-import { ShoppingBag, Plus, CheckCircle2, Clock, MapPin, ShieldCheck, DollarSign, Store, ArrowRight } from 'lucide-react';
-import { Buyer, BuyerDemand, Harvest } from '../../../shared/types';
+import { ShoppingBag, Plus, CheckCircle2, Clock, MapPin, ShieldCheck, DollarSign, Store, ArrowRight, Package } from 'lucide-react';
+import { Buyer, BuyerDemand, Harvest, FarmerPool, Order } from '../../../shared/types';
 import { SEED_BUYERS, SEED_BUYER_DEMANDS } from '../../../shared/data/seedData';
 import { api } from '../services/api';
+import { useOrders } from '../hooks/useOrders';
+import { OrderStatusTimeline } from './OrderStatusTimeline';
 
 export const BuyerDashboard: React.FC = () => {
   const [buyer] = useState<Buyer>(SEED_BUYERS[0]); // Shreemaya Hotel & Restaurants
@@ -18,9 +20,31 @@ export const BuyerDashboard: React.FC = () => {
 
   // Available farm produce ready for purchase
   const [realHarvests, setRealHarvests] = useState<Harvest[]>([]);
+  const [realPools, setRealPools] = useState<FarmerPool[]>([]);
+  
+  const { orders, refreshOrders } = useOrders();
+
   useEffect(() => {
     api.getHarvests().then(h => setRealHarvests(h));
+    api.getPools().then(p => setRealPools(p));
   }, []);
+
+  const handleCreateOrder = async (poolId: string, crop: string, quantityKg: number, agreedPrice: number) => {
+    try {
+      await api.createOrder({
+        pool_id: poolId,
+        crop,
+        quantity_kg: quantityKg,
+        agreed_price_per_kg: agreedPrice,
+        pickup_location: "Cluster A",
+        delivery_location: buyer.location
+      });
+      alert(`Order for ${quantityKg}kg of ${crop} created successfully!`);
+      refreshOrders();
+    } catch(e: any) {
+      alert("Error creating order: " + e.message);
+    }
+  };
 
   const handlePlaceOffer = async (harvestId: string, crop: string, quantityKg: number) => {
     try {
@@ -118,51 +142,53 @@ export const BuyerDashboard: React.FC = () => {
         </button>
       </div>
 
-      {/* Available Produce Section (Clean, Scannable Cards) */}
+      {/* Available Pools Section */}
       <div className="space-y-3">
         <div className="flex items-center justify-between">
           <h2 className="text-base font-bold text-slate-900 font-display">
-            Available Produce
+            Available Farm Pools
           </h2>
-          <span className="text-xs text-slate-500">3 verified listings nearby</span>
+          <span className="text-xs text-slate-500">{realPools.length} verified pools nearby</span>
         </div>
 
         <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-          {realHarvests.slice(0,3).map((item) => (
+          {realPools.slice(0,3).map((pool) => (
             <div 
-              key={item.id}
+              key={pool.id}
               className="bg-white rounded-2xl p-5 border border-slate-200 shadow-xs flex flex-col justify-between space-y-4 hover:border-slate-300 transition-all"
             >
               <div className="space-y-2">
                 <div className="flex items-center justify-between">
-                  <span className="text-lg font-bold text-slate-900 font-display">{item.crop}</span>
+                  <span className="text-lg font-bold text-slate-900 font-display">{pool.crop}</span>
                   <span className="bg-emerald-50 text-emerald-800 text-[10px] font-bold px-2 py-0.5 rounded-full border border-emerald-200">
-                    {item.qualityGrade}
+                    {pool.poolCode}
                   </span>
                 </div>
                 <div className="text-2xl font-extrabold text-emerald-700 font-display">
-                  ₹{item.minAcceptablePrice} / kg (Min)
+                  {pool.totalQuantityKg} kg
                 </div>
                 <div className="space-y-1 text-xs text-slate-600 pt-1">
                   <div className="flex items-center justify-between">
-                    <span className="text-slate-400">Quantity:</span>
-                    <span className="font-semibold text-slate-800">{item.quantityKg} kg</span>
+                    <span className="text-slate-400">Farmers:</span>
+                    <span className="font-semibold text-slate-800">{pool.farmerCount}</span>
                   </div>
                   <div className="flex items-center justify-between">
                     <span className="text-slate-400">Location:</span>
-                    <span className="font-medium text-slate-800">{item.location}</span>
-                  </div>
-                  <div className="flex items-center justify-between">
-                    <span className="text-slate-400">Farmer:</span>
-                    <span className="font-medium text-slate-800">{item.farmerName}</span>
+                    <span className="font-medium text-slate-800">{pool.clusterName}</span>
                   </div>
                 </div>
               </div>
               <button
-                onClick={() => handlePlaceOffer(item.id, item.crop, item.quantityKg)}
+                onClick={() => {
+                  const qty = prompt(`How many kg of ${pool.crop} do you want to order?`, pool.totalQuantityKg.toString());
+                  if (!qty) return;
+                  const price = prompt(`Enter price per kg for ${pool.crop} (e.g. 18):`, "18");
+                  if (!price) return;
+                  handleCreateOrder(pool.id, pool.crop, Number(qty), Number(price));
+                }}
                 className="w-full py-2.5 rounded-xl border-2 border-emerald-500 text-emerald-600 font-bold text-xs hover:bg-emerald-50 transition-colors cursor-pointer"
               >
-                Place Offer at ₹18/kg
+                Create Order
               </button>
             </div>
           ))}
@@ -223,6 +249,37 @@ export const BuyerDashboard: React.FC = () => {
             </div>
           ))}
         </div>
+      </div>
+
+      {/* My Active Orders List */}
+      <div className="bg-white rounded-3xl p-5 sm:p-6 border border-slate-200 shadow-xs space-y-4">
+        <h3 className="text-base font-bold text-slate-900 font-display flex items-center gap-2">
+          <Package className="w-5 h-5 text-emerald-600" />
+          My Active Orders
+        </h3>
+        {orders.length === 0 ? (
+          <div className="text-sm text-slate-500 py-4 text-center">No active orders found.</div>
+        ) : (
+          <div className="space-y-4">
+            {orders.map((order) => (
+              <div key={order.id} className="border border-slate-200 rounded-xl p-4 space-y-4">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <div className="font-bold text-slate-900">{order.crop}</div>
+                    <div className="text-xs text-slate-500">Order ID: {order.id.substring(0, 8)}</div>
+                  </div>
+                  <div className="text-right">
+                    <div className="font-bold text-emerald-700">{order.quantity_kg} kg</div>
+                    <div className="text-xs font-semibold text-slate-700">₹{order.agreed_price_per_kg}/kg</div>
+                  </div>
+                </div>
+                <div className="bg-slate-50 p-4 rounded-lg">
+                   <OrderStatusTimeline currentStatus={order.status} />
+                </div>
+              </div>
+            ))}
+          </div>
+        )}
       </div>
 
       {/* Active Buyer Demands List */}

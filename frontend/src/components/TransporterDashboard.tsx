@@ -3,8 +3,19 @@ import { Truck, Navigation, Plus, CheckCircle2, Clock, MapPin, DollarSign, Arrow
 import { Transporter, BackhaulTrip } from '../../../shared/types';
 
 import { api } from '../services/api';
+import { useOrders } from '../hooks/useOrders';
+import { OrderStatusTimeline } from './OrderStatusTimeline';
 
 export const TransporterDashboard: React.FC = () => {
+  const { orders, refreshOrders } = useOrders();
+  const handleUpdateStatus = async (orderId: string, status: string) => {
+    try {
+      await api.updateOrderStatus(orderId, status);
+      refreshOrders();
+    } catch(e: any) {
+      alert("Error updating order status: " + e.message);
+    }
+  };
   const [transporter] = useState<Transporter>({ id: "tr-1", name: "Jagdish Yadav", phone: "", vehicleNumber: "MP09AB1234", vehicleType: "Tata Ace", totalCapacityKg: 1000, currentLocation: "Indore", currentRoute: "", availableCapacityKg: 500, rating: 4.8, completedTrips: 120, trustScore: 98 }); // Placeholder for authenticated transporter profile // Jagdish Yadav
   const [backhauls, setBackhauls] = useState<BackhaulTrip[]>([]);
 
@@ -138,60 +149,52 @@ export const TransporterDashboard: React.FC = () => {
         </div>
 
         <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-          {availableLoads.map((load) => (
+
+          {orders.map((order) => (
             <div 
-              key={load.id}
+              key={order.id}
               className="bg-white rounded-2xl p-5 border border-slate-200 shadow-xs flex flex-col justify-between space-y-4 hover:border-slate-300 transition-all"
             >
               <div className="space-y-2.5">
                 <div className="flex items-center justify-between">
-                  <span className="text-base font-bold text-slate-900 font-display">{load.route}</span>
+                  <span className="text-base font-bold text-slate-900 font-display">{order.crop}</span>
                   <span className="bg-blue-50 text-blue-700 text-[10px] font-bold px-2 py-0.5 rounded-full border border-blue-200">
-                    {load.distance}
+                    {order.quantity_kg} kg
                   </span>
                 </div>
-
-                <div className="text-xl font-extrabold text-emerald-700 font-display">
-                  {load.estimatedEarnings} <span className="text-xs font-normal text-slate-500">estimated earning</span>
+                <div className="text-sm font-semibold text-emerald-700 font-display">
+                  Order ID: {order.id.substring(0,8)}
                 </div>
-
                 <div className="space-y-1.5 text-xs text-slate-600 pt-1">
                   <div className="flex items-center justify-between">
-                    <span className="text-slate-400">Available Weight:</span>
-                    <span className="font-semibold text-slate-800">{load.weight}</span>
+                    <span className="text-slate-400">Pickup:</span>
+                    <span className="font-semibold text-slate-800">{order.pickup_location}</span>
                   </div>
                   <div className="flex items-center justify-between">
-                    <span className="text-slate-400">Pickup Location:</span>
-                    <span className="font-semibold text-slate-800 truncate max-w-[180px]">{load.pickup}</span>
-                  </div>
-                  <div className="flex items-center justify-between">
-                    <span className="text-slate-400">Pickup Time:</span>
-                    <span className="font-semibold text-slate-800">{load.pickupTime}</span>
+                    <span className="text-slate-400">Delivery:</span>
+                    <span className="font-semibold text-slate-800">{order.delivery_location}</span>
                   </div>
                 </div>
+                
+                <div className="bg-slate-50 p-2 rounded-lg mt-2 overflow-x-auto">
+                   <OrderStatusTimeline currentStatus={order.status} />
+                </div>
               </div>
-
-              <button
-                type="button"
-                onClick={() => setAcceptedLoadId(load.id)}
-                className={`w-full py-2.5 px-4 rounded-xl text-xs font-bold transition-all cursor-pointer flex items-center justify-center gap-1.5 ${
-                  acceptedLoadId === load.id 
-                    ? 'bg-emerald-800 text-white' 
-                    : 'bg-slate-900 hover:bg-slate-800 text-white shadow-xs'
-                }`}
-              >
-                {acceptedLoadId === load.id ? (
-                  <>
-                    <CheckCircle2 className="w-3.5 h-3.5 text-emerald-300" />
-                    <span>Load Confirmed</span>
-                  </>
-                ) : (
-                  <>
-                    <span>Accept Load</span>
-                    <ArrowRight className="w-3.5 h-3.5 text-slate-400" />
-                  </>
+              
+              <div className="flex flex-col gap-2">
+                {order.status === 'TRANSPORT_ASSIGNED' && (
+                  <button onClick={() => handleUpdateStatus(order.id, 'PICKUP_READY')} className="w-full py-2 bg-slate-900 text-white rounded-xl text-xs font-bold">Mark Pickup Ready</button>
                 )}
-              </button>
+                {order.status === 'PICKUP_READY' && (
+                  <button onClick={() => handleUpdateStatus(order.id, 'PICKED_UP')} className="w-full py-2 bg-slate-900 text-white rounded-xl text-xs font-bold">Confirm Picked Up</button>
+                )}
+                {order.status === 'PICKED_UP' && (
+                  <button onClick={() => handleUpdateStatus(order.id, 'IN_TRANSIT')} className="w-full py-2 bg-blue-600 text-white rounded-xl text-xs font-bold">Start Transit</button>
+                )}
+                {order.status === 'IN_TRANSIT' && (
+                  <button onClick={() => handleUpdateStatus(order.id, 'DELIVERED')} className="w-full py-2 bg-emerald-600 text-white rounded-xl text-xs font-bold">Mark Delivered</button>
+                )}
+              </div>
             </div>
           ))}
         </div>

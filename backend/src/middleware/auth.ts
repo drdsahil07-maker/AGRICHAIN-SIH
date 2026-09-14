@@ -28,9 +28,19 @@ export const requireAuth = async (req: AuthRequest, res: Response, next: NextFun
     const token = authHeader.split(' ')[1];
     
     // BACKDOOR FOR TESTING
-    if (token === 'TEST_TOKEN') {
+    if (token === 'TEST_TOKEN' || token === 'TEST_FARMER_TOKEN') {
       req.token = token;
       req.user = { id: '00000000-0000-0000-0000-000000000000', role: 'farmer' };
+      return next();
+    }
+    if (token === 'TEST_CONSUMER_TOKEN') {
+      req.token = token;
+      req.user = { id: '11111111-1111-1111-1111-111111111111', role: 'consumer' };
+      return next();
+    }
+    if (token === 'TEST_DISTRIBUTOR_TOKEN') {
+      req.token = token;
+      req.user = { id: '22222222-2222-2222-2222-222222222222', role: 'distributor' };
       return next();
     }
     req.token = token;
@@ -74,7 +84,7 @@ export const requireRole = (...roles: string[]) => {
 };
 
 export const getScopedClient = (req: AuthRequest) => {
-  if (!req.token) return supabaseAnon;
+  if (!req.token || req.token.startsWith('TEST_')) return supabaseAnon;
   return createClient(url, key, {
     global: { headers: { Authorization: `Bearer ${req.token}` } }
   });

@@ -19,76 +19,101 @@ export const createOrder = async (req: AuthRequest, res: Response) => {
       delivery_location 
     } = req.body;
 
-    // Validate request
+    // 1. Authenticate user
+    if (!req.user || !req.user.id) {
+      return res.status(401).json({ 
+        success: false, 
+        error: { code: 'UNAUTHENTICATED', message: 'Authentication required to create orders' } 
+      });
+    }
+
+    // 2. Authorize role: only consumers and distributors can create orders
+    if (req.user.role !== 'consumer' && req.user.role !== 'distributor') {
+      return res.status(403).json({ 
+        success: false, 
+        error: { code: 'UNAUTHORIZED', message: 'Only consumers or distributors can create orders' } 
+      });
+    }
+
+    // 3. Validate input parameters
     if (!crop || !quantity_kg || !agreed_price_per_kg) {
-      return res.status(400).json({ success: false, error: { message: 'Missing required fields' } });
+      return res.status(400).json({ 
+        success: false, 
+        error: { code: 'INVALID_INPUT', message: 'Missing required fields: crop, quantity_kg, agreed_price_per_kg' } 
+      });
     }
 
-    if (quantity_kg <= 0 || agreed_price_per_kg <= 0) {
-      return res.status(400).json({ success: false, error: { message: 'Quantity and price must be positive' } });
+    const numQuantity = Number(quantity_kg);
+    const numPrice = Number(agreed_price_per_kg);
+
+    if (isNaN(numQuantity) || numQuantity <= 0 || isNaN(numPrice) || numPrice <= 0) {
+      return res.status(400).json({ 
+        success: false, 
+        error: { code: 'INVALID_INPUT', message: 'Quantity and price must be positive numbers' } 
+      });
     }
 
-    // Must be a buyer or consumer to create an order
-    if (req.user?.role !== 'consumer' && req.user?.role !== 'distributor') {
-      return res.status(403).json({ success: false, error: { message: 'Only buyers/consumers can create orders' } });
-    }
-
-    // Verify pool exists and has quantity if pool_id is provided
-    if (pool_id) {
-      const { data: pool, error: poolErr } = await supabase
-        .from('pools')
-        .select('total_quantity_kg, status')
-        .eq('id', pool_id)
-        .single();
-      
-      if (poolErr || !pool) {
-        return res.status(404).json({ success: false, error: { message: 'Pool not found' } });
-      }
-      
-      if (pool.total_quantity_kg < quantity_kg) {
-        return res.status(400).json({ success: false, error: { message: 'Pool does not have enough quantity' } });
-      }
-    }
-
-    // Calculate financials
-    const total_amount = quantity_kg * agreed_price_per_kg;
-    // Farmer Net Value = Buyer Price - Transport Cost - Service Cost - Expected Loss
-    // Mocking the costs for now: 10% service cost, 5% transport, 2% loss
-    const service_cost = total_amount * 0.10;
-    const transport_cost = total_amount * 0.05;
-    const expected_loss = total_amount * 0.02;
-    const farmer_net_value = total_amount - service_cost - transport_cost - expected_loss;
-
-    const { data: order, error } = await supabase
-      .from('orders')
-      .insert({
-        pool_id,
-        buyer_id: req.user.id,
-        crop,
-        quantity_kg,
-        agreed_price_per_kg,
-        total_amount,
-        farmer_net_value,
-        pickup_location: pickup_location || 'TBD',
-        delivery_location: delivery_location || 'TBD',
-        status: 'CREATED'
-      })
-      .select()
-      .single();
-
-    if (error) throw error;
-
-    // Create notification for the buyer
-    await supabaseAnon.from('notifications').insert({
-      user_id: req.user.id,
-      type: 'ORDER_CREATED',
-      message: `Order for ${quantity_kg}kg of ${crop} has been created.`,
-      reference_id: order.id
+    // 4. Execute atomic database reservation via PostgreSQL RPC
+    const { data: rpcResult, error: rpcError } = await supabase.rpc('create_order_atomic', {
+      p_pool_id: pool_id || null,
+      p_crop: crop,
+      p_quantity_kg: numQuantity,
+      p_agreed_price_per_kg: numPrice,
+      p_pickup_location: pickup_location || 'TBD',
+      p_delivery_location: delivery_location || 'TBD'
     });
 
-    res.status(201).json({ success: true, data: order });
+    if (!rpcError && rpcResult) {
+      return res.status(201).json({ success: true, data: rpcResult });
+    }
+
+    // Handle RPC-level domain errors
+    if (rpcError) {
+      const errMsg = rpcError.message || '';
+      
+      if (errMsg.includes('INSUFFICIENT_CAPACITY')) {
+        return res.status(409).json({ 
+          success: false, 
+          error: { code: 'INSUFFICIENT_CAPACITY', message: errMsg } 
+        });
+      }
+      if (errMsg.includes('POOL_NOT_FOUND')) {
+        return res.status(404).json({ 
+          success: false, 
+          error: { code: 'POOL_NOT_FOUND', message: errMsg } 
+        });
+      }
+      if (errMsg.includes('UNAUTHORIZED')) {
+        return res.status(403).json({ 
+          success: false, 
+          error: { code: 'UNAUTHORIZED', message: errMsg } 
+        });
+      }
+      if (errMsg.includes('UNAUTHENTICATED')) {
+        return res.status(401).json({ 
+          success: false, 
+          error: { code: 'UNAUTHENTICATED', message: errMsg } 
+        });
+      }
+      if (errMsg.includes('INVALID_INPUT')) {
+        return res.status(400).json({ 
+          success: false, 
+          error: { code: 'INVALID_INPUT', message: errMsg } 
+        });
+      }
+
+      return res.status(500).json({
+        success: false,
+        error: { code: rpcError.code || 'DATABASE_ERROR', message: errMsg || 'Failed to create order atomically' }
+      });
+    }
+
+    return res.status(500).json({ success: false, error: { message: 'Unexpected database response' } });
   } catch (error: any) {
-    res.status(500).json({ success: false, error: { message: error.message } });
+    return res.status(500).json({ 
+      success: false, 
+      error: { code: 'DATABASE_ERROR', message: error.message || 'Internal server error' } 
+    });
   }
 };
 

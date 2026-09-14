@@ -31,6 +31,47 @@ export interface CompileParams {
 }
 
 export const api = {
+  // === Phase 7 Orders API ===
+  async createOrder(orderData: any): Promise<any> {
+    const res = await fetchWithAuth('/api/orders', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(orderData),
+    });
+    const data = await res.json();
+    if (!res.ok || !data.success) throw new Error(data?.error?.message || "Failed to create order");
+    return data.data;
+  },
+  async getOrders(): Promise<any[]> {
+    try {
+      const res = await fetchWithAuth('/api/orders');
+      if (res.ok) {
+        const data = await res.json();
+        return data.data || [];
+      }
+    } catch (e) {
+      console.warn('API error fetching orders:', e);
+    }
+    return [];
+  },
+  async getOrderById(orderId: string): Promise<any> {
+    const res = await fetchWithAuth(`/api/orders/${orderId}`);
+    const data = await res.json();
+    if (!res.ok || !data.success) throw new Error(data?.error?.message || "Failed to fetch order");
+    return data.data;
+  },
+  async updateOrderStatus(orderId: string, status: string): Promise<any> {
+    const res = await fetchWithAuth(`/api/orders/${orderId}/status`, {
+      method: 'PATCH',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ status }),
+    });
+    const data = await res.json();
+    if (!res.ok || !data.success) throw new Error(data?.error?.message || "Failed to update order status");
+    return data.data;
+  },
+  // === Existing API ===
+
   async compileChain(params: CompileParams): Promise<{ options: ChainOption[]; bestOption: ChainOption }> {
     try {
       const res = await fetchWithAuth('/api/chain/compile', {
