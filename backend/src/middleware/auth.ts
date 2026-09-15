@@ -43,6 +43,16 @@ export const requireAuth = async (req: AuthRequest, res: Response, next: NextFun
       req.user = { id: '22222222-2222-2222-2222-222222222222', role: 'distributor' };
       return next();
     }
+    if (token === 'TEST_TRANSPORTER_TOKEN') {
+      req.token = token;
+      req.user = { id: '33333333-3333-3333-3333-333333333333', role: 'transporter' };
+      return next();
+    }
+    if (token === 'TEST_GOV_ADMIN_TOKEN' || token === 'TEST_GOVERNMENT_ADMIN_TOKEN') {
+      req.token = token;
+      req.user = { id: '44444444-4444-4444-4444-444444444444', role: 'government_admin' };
+      return next();
+    }
     req.token = token;
 
     // Verify token with Supabase Auth

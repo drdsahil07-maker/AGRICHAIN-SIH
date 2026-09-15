@@ -103,7 +103,7 @@ export const ProfilePage: React.FC = () => {
       <div className="min-h-screen bg-slate-50 flex items-center justify-center">
         <div className="flex flex-col items-center gap-3">
           <div className="w-8 h-8 border-3 border-emerald-600 border-t-transparent rounded-full animate-spin"></div>
-          <span className="text-xs font-semibold text-slate-700">Loading Supabase profile...</span>
+          <span className="text-xs font-semibold text-slate-700">Loading user profile...</span>
         </div>
       </div>
     );
@@ -170,7 +170,7 @@ export const ProfilePage: React.FC = () => {
 
     setSaving(false);
     if (res.success) {
-      setSuccessMsg('Profile updated successfully in Supabase!');
+      setSuccessMsg('Profile updated successfully!');
       setIsEditing(false);
       setTimeout(() => setSuccessMsg(null), 4000);
     } else {
@@ -803,7 +803,7 @@ export const ProfilePage: React.FC = () => {
                 className="inline-flex items-center gap-2 px-6 py-2.5 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl text-xs font-bold shadow-xs transition-all cursor-pointer disabled:opacity-50"
               >
                 <Save className="w-4 h-4" />
-                <span>{saving ? 'Saving to Supabase...' : 'Save Changes'}</span>
+                <span>{saving ? 'Saving changes...' : 'Save Changes'}</span>
               </button>
             </div>
           )}

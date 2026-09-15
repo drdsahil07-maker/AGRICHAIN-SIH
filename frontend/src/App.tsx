@@ -10,6 +10,7 @@ import { CorridorMapView } from './components/CorridorMapView';
 import { EscrowSettlementView } from './components/EscrowSettlementView';
 import { LandingOverview } from './components/LandingOverview';
 import { CallRecordsView } from './components/CallRecordsView';
+import { GovernmentDashboard } from './pages/admin/GovernmentDashboard';
 import { AdminCommandCenter } from './components/AdminCommandCenter';
 
 // Modals
@@ -23,6 +24,7 @@ import { Harvest, ChainOption, QualityGrade } from '../../shared/types';
 import { api } from './services/api';
 import { SEED_HARVESTS } from '../../shared/data/seedData';
 import { useAuth } from './context/AuthContext';
+import { ShieldAlert, ArrowLeft } from 'lucide-react';
 
 export default function App() {
   const { isAuthModalOpen, setIsAuthModalOpen, role } = useAuth();
@@ -33,6 +35,13 @@ export default function App() {
   useEffect(() => {
     api.getHarvests().then(setActiveHarvests);
   }, []);
+
+  // When logged in as government admin, default to admin portal if on landing
+  useEffect(() => {
+    if (role === 'government_admin' && currentTab === 'landing') {
+      setCurrentTab('admin');
+    }
+  }, [role]);
   
   // Modals state
   const [isVoiceOpen, setIsVoiceOpen] = useState(false);
@@ -43,48 +52,24 @@ export default function App() {
 
   const showNotification = (msg: string) => {
     setNotification(msg);
-    setTimeout(() => {
-      setNotification(null);
-    }, 4500);
+    setTimeout(() => setNotification(null), 4000);
   };
 
-  const handleHarvestCreated = async (data: {
-    crop: string;
-    quantityKg: number;
-    location: string;
-    minAcceptablePrice: number;
-    qualityGrade: QualityGrade;
-    sellingWindow: string;
-  }) => {
-    const newHarvest: Harvest = {
-      id: `AC-HRV-2026-${Math.floor(10000 + Math.random() * 90000)}`,
-      farmerId: 'farmer-ramesh-patel',
-      farmerName: 'Ramesh Patel',
-      crop: data.crop,
-      quantityKg: data.quantityKg,
-      location: data.location,
-      harvestDate: new Date().toISOString().split('T')[0],
-      qualityGrade: data.qualityGrade,
-      minAcceptablePrice: data.minAcceptablePrice,
-      sellingWindow: data.sellingWindow,
-      status: 'compiled',
-      poolId: 'pool-cluster-a-tomato',
-      createdAt: new Date().toISOString(),
-    };
-
+  const handleHarvestCreated = (newHarvest: Harvest) => {
     setActiveHarvests((prev) => [newHarvest, ...prev]);
-    showNotification(`✓ Harvest saved: ${data.quantityKg} kg ${data.crop} (Min ₹${data.minAcceptablePrice}/kg). Supply chain route compiled!`);
+    setCompilerHarvest(newHarvest);
     setCurrentTab('compiler');
+    showNotification(`New harvest recorded: ${newHarvest.crop} (${newHarvest.quantityKg}kg). Compiling routes...`);
   };
 
-  const handleChainAccepted = (option: ChainOption) => {
-    showNotification(`✓ Accepted: "${option.title}" @ ₹${option.farmerNetValue.toFixed(2)}/kg Farmer Net. Consignment locked!`);
+  const handleChainAccepted = (chain: ChainOption) => {
+    showNotification(`Consignment accepted! Assigned to Pool #${chain.id || 'POOL-IND-01'}`);
+    setCurrentTab('farmer');
   };
 
   return (
-    <div className="min-h-screen bg-slate-100 text-slate-900 flex flex-col font-sans selection:bg-emerald-500 selection:text-white antialiased">
-      
-      {/* Universal Navigation Header */}
+    <div className="min-h-screen bg-slate-50 flex flex-col font-sans text-slate-900 antialiased selection:bg-emerald-500 selection:text-white">
+      {/* Top Navigation */}
       <Navbar
         currentTab={currentTab}
         onSelectTab={(tab) => setCurrentTab(tab)}
@@ -94,10 +79,10 @@ export default function App() {
         onOpenQuality={() => setCurrentTab('quality')}
       />
 
-      {/* Ephemeral Notification Toast */}
+      {/* Global Notification Banner */}
       {notification && (
-        <div className="fixed bottom-6 right-6 z-50 bg-slate-900 text-white px-5 py-3 rounded-2xl shadow-2xl border border-slate-700 flex items-center gap-3 animate-in fade-in slide-in-from-bottom-3 duration-200 max-w-md text-xs">
-          <span className="w-2.5 h-2.5 rounded-full bg-emerald-400 shrink-0"></span>
+        <div className="bg-slate-900 text-white px-4 py-2.5 text-xs flex items-center justify-center gap-2 sticky top-16 z-50 shadow-md">
+          <span className="w-2 rounded-full bg-emerald-400 shrink-0 h-2"></span>
           <p className="font-medium">{notification}</p>
         </div>
       )}
@@ -113,21 +98,43 @@ export default function App() {
           />
         )}
 
-        {currentTab === 'compiler' && (
+        {(currentTab === 'compiler' || currentTab === 'produce' || currentTab === 'offers') && (
           <CompilerView onChainAccepted={handleChainAccepted} initialHarvest={compilerHarvest} />
         )}
 
         {currentTab === 'calls' && (
-          <CallRecordsView
-            onOpenNewCall={() => setIsCallOpen(true)}
-            onCompileForCrop={(crop, qty, price) => {
-              setCurrentTab('compiler');
-              showNotification(`Compiling optimal supply chain for ${qty}kg ${crop} (Target: ₹${price}/kg)...`);
-            }}
-          />
+          role === 'government_admin' ? (
+            <CallRecordsView
+              onOpenNewCall={() => setIsCallOpen(true)}
+              onCompileForCrop={(crop, qty, price) => {
+                setCurrentTab('compiler');
+                showNotification(`Compiling optimal supply chain for ${qty}kg ${crop} (Target: ₹${price}/kg)...`);
+              }}
+            />
+          ) : (
+            <div className="max-w-md mx-auto my-20 p-8 bg-white border border-slate-200 rounded-3xl text-center space-y-4 shadow-sm">
+              <div className="w-12 h-12 rounded-2xl bg-amber-100 text-amber-800 flex items-center justify-center mx-auto">
+                <ShieldAlert className="w-6 h-6" />
+              </div>
+              <h3 className="text-base font-bold text-slate-900">Government Clearance Required</h3>
+              <p className="text-xs text-slate-600 leading-relaxed">
+                Farmer AI voice call records, audio transcriptions, and grievance logs are protected under regulatory privacy rules and accessible exclusively to verified Government Administrators.
+              </p>
+              <div className="pt-2">
+                <button
+                  type="button"
+                  onClick={() => setCurrentTab('landing')}
+                  className="inline-flex items-center gap-2 px-4 py-2 bg-slate-900 hover:bg-slate-800 text-white text-xs font-bold rounded-xl transition-colors cursor-pointer"
+                >
+                  <ArrowLeft className="w-4 h-4" />
+                  <span>Return to Main View</span>
+                </button>
+              </div>
+            </div>
+          )
         )}
 
-        {currentTab === 'map' && (
+        {(currentTab === 'map' || currentTab === 'tracking') && (
           <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6 space-y-4">
             <div className="bg-white rounded-2xl p-5 border border-slate-200 shadow-xs flex flex-col sm:flex-row sm:items-center justify-between gap-3">
               <div>
@@ -154,7 +161,7 @@ export default function App() {
           </div>
         )}
 
-        {currentTab === 'farmer' && (
+        {(currentTab === 'farmer' || currentTab === 'orders') && (
           <FarmerDashboard
             onOpenSellModal={() => setIsSellOpen(true)}
             onOpenVoice={() => setIsVoiceOpen(true)}
@@ -165,15 +172,15 @@ export default function App() {
           />
         )}
 
-        {currentTab === 'pooling' && (
+        {(currentTab === 'pooling' || currentTab === 'supply' || currentTab === 'loads') && (
           <DynamicPoolingView />
         )}
 
-        {currentTab === 'transporter' && (
+        {(currentTab === 'transporter' || currentTab === 'trips') && (
           <TransporterDashboard />
         )}
 
-        {currentTab === 'buyer' && (
+        {(currentTab === 'buyer' || currentTab === 'requirements') && (
           <BuyerDashboard />
         )}
 
@@ -185,33 +192,51 @@ export default function App() {
           <EscrowSettlementView />
         )}
 
-        {currentTab === 'admin' && (
-          <AdminCommandCenter />
+        {(currentTab === 'admin' || currentTab === 'government' || currentTab === 'mandi' || currentTab === 'supply_demand' || currentTab === 'reports') && (
+          role === 'government_admin' ? (
+            <GovernmentDashboard />
+          ) : (
+            <div className="max-w-md mx-auto my-20 p-8 bg-white border border-slate-200 rounded-3xl text-center space-y-4 shadow-sm">
+              <div className="w-12 h-12 rounded-2xl bg-amber-100 text-amber-800 flex items-center justify-center mx-auto">
+                <ShieldAlert className="w-6 h-6" />
+              </div>
+              <h3 className="text-base font-bold text-slate-900">Government Clearance Required</h3>
+              <p className="text-xs text-slate-600 leading-relaxed">
+                The Government Command Portal is reserved for verified State Agricultural Marketing Board administrators.
+              </p>
+              <div className="pt-2">
+                <button
+                  type="button"
+                  onClick={() => setCurrentTab('landing')}
+                  className="inline-flex items-center gap-2 px-4 py-2 bg-slate-900 hover:bg-slate-800 text-white text-xs font-bold rounded-xl transition-colors cursor-pointer"
+                >
+                  <ArrowLeft className="w-4 h-4" />
+                  <span>Return to Main View</span>
+                </button>
+              </div>
+            </div>
+          )
         )}
       </main>
 
-      {/* Enterprise Business Footer */}
-      <footer className="bg-slate-900 text-slate-400 text-xs py-8 border-t border-slate-800">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 flex flex-col sm:flex-row items-center justify-between gap-4">
-          <div className="space-y-1 text-center sm:text-left">
-            <div className="flex items-center justify-center sm:justify-start gap-2 text-white font-bold font-display">
-              <span>AgriChain Enterprise</span>
-              <span className="text-[10px] text-emerald-400 bg-emerald-500/20 px-1.5 py-0.5 rounded border border-emerald-500/30">
-                Supply Chain Operating Layer
-              </span>
+      {/* Clean Enterprise Footer */}
+      <footer className="bg-white text-slate-500 text-xs py-5 border-t border-slate-200">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 flex flex-col sm:flex-row items-center justify-between gap-3">
+          <div className="space-y-0.5 text-center sm:text-left">
+            <div className="text-slate-900 font-bold font-display text-sm">
+              AgriChain
             </div>
-            <p className="text-slate-400 text-[11px]">
-              Direct Farmgate Sourcing &bull; Return Backhaul Fleet Matching &bull; Automated Escrow
+            <p className="text-slate-500 text-xs">
+              Decentralized Agricultural Supply Chain &amp; Dynamic Price Discovery
             </p>
           </div>
 
-          <div className="text-center sm:text-right space-y-0.5 text-[11px]">
-            <p className="text-slate-300 font-medium">
-              Sanwer &bull; Dewas &bull; Hatod &bull; Indore Wholesale Terminal
-            </p>
-            <p className="text-slate-500">
-              Zero opaque middleman dealer margins. Auditable settlement per kilogram.
-            </p>
+          <div className="flex items-center gap-4 text-xs text-slate-600 font-medium">
+            <button type="button" onClick={() => showNotification('AgriChain Terms & Escrow Policy: Standard decentralized trade terms apply.')} className="hover:text-emerald-700 transition-colors cursor-pointer">Terms</button>
+            <span>&bull;</span>
+            <button type="button" onClick={() => showNotification('Privacy Notice: Secure end-to-end encrypted farmer and trade records.')} className="hover:text-emerald-700 transition-colors cursor-pointer">Privacy</button>
+            <span>&bull;</span>
+            <button type="button" onClick={() => showNotification('AgriChain Help Desk: Contact toll-free support or APMC nodal officer.')} className="hover:text-emerald-700 transition-colors cursor-pointer">Help Desk</button>
           </div>
         </div>
       </footer>
@@ -238,15 +263,13 @@ export default function App() {
       <SellHarvestModal
         isOpen={isSellOpen}
         onClose={() => setIsSellOpen(false)}
-        onSubmitHarvest={handleHarvestCreated}
+        onHarvestCreated={handleHarvestCreated}
       />
 
-      {/* Role-Based Authentication Modal */}
       <AuthModal
         isOpen={isAuthModalOpen}
         onClose={() => setIsAuthModalOpen(false)}
       />
-
     </div>
   );
 }

@@ -263,3 +263,5 @@ export const saveCallRecord = (newRecord: Omit<CallRecordItem, 'id' | 'timestamp
 
   return fullRecord;
 };
+
+export const SEED_CALL_RECORDS = INITIAL_CALL_RECORDS;

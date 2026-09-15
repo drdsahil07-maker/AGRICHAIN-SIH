@@ -43,8 +43,34 @@ export const FarmerDashboard: React.FC<FarmerDashboardProps> = ({
 }) => {
   const [selectedCrop, setSelectedCrop] = useState<string>('Tomato');
   const [benchmarks, setBenchmarks] = useState<Record<string, PriceBenchmark>>({});
-  useEffect(() => { api.getPriceBenchmarks().then(setBenchmarks) }, []);
+  const [liveMandi, setLiveMandi] = useState<{
+    available: boolean;
+    records?: any[];
+    message?: string;
+    lastUpdated?: string;
+  } | null>(null);
+  const [mandiLoading, setMandiLoading] = useState(false);
+
+  useEffect(() => { 
+    api.getPriceBenchmarks().then(setBenchmarks);
+  }, []);
+
+  useEffect(() => {
+    setMandiLoading(true);
+    api.getMandiPrices({ commodity: selectedCrop })
+      .then((res) => {
+        setLiveMandi(res);
+      })
+      .catch((err) => {
+        setLiveMandi({ available: false, message: 'Government mandi feed unavailable' });
+      })
+      .finally(() => setMandiLoading(false));
+  }, [selectedCrop]);
+
   const benchmark: PriceBenchmark = benchmarks[selectedCrop] || SEED_PRICE_BENCHMARKS['Tomato'];
+  const matchingLiveRecord = liveMandi?.records?.find(
+    (r: any) => r.commodity?.toLowerCase().includes(selectedCrop.toLowerCase())
+  ) || liveMandi?.records?.[0];
   const { orders } = useOrders();
 
   const flagshipHarvest = activeHarvests.find(h => h.id === 'AC-HRV-2026-00124') || activeHarvests[0];
@@ -241,13 +267,29 @@ export const FarmerDashboard: React.FC<FarmerDashboardProps> = ({
 
       {/* Mandi Price Benchmark Engine Card */}
       <div className="bg-white rounded-2xl p-5 border border-slate-200 shadow-sm space-y-4">
-        <div className="flex items-center justify-between">
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
           <div>
-            <h3 className="text-sm font-bold text-slate-900 flex items-center gap-1.5">
-              <TrendingUp className="w-4 h-4 text-emerald-600" />
-              <span>Fair-Price Benchmark Engine {benchmark.isDemoData && <span className="ml-2 text-[9px] bg-amber-100 text-amber-800 px-1.5 py-0.5 rounded uppercase tracking-wider font-bold">Demo Data</span>}</span>
-            </h3>
-            <p className="text-xs text-slate-500 mt-0.5">e-NAM & Mandi Live Feeds vs Local Trader Offers</p>
+            <div className="flex items-center gap-2">
+              <h3 className="text-sm font-bold text-slate-900 flex items-center gap-1.5">
+                <TrendingUp className="w-4 h-4 text-emerald-600" />
+                <span>Nearby Mandi Benchmark Prices</span>
+              </h3>
+              {liveMandi?.available && matchingLiveRecord ? (
+                <span className="inline-flex items-center gap-1 text-[10px] font-bold px-2 py-0.5 rounded-full bg-emerald-100 text-emerald-800 border border-emerald-300">
+                  <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse"></span>
+                  LIVE APMC Feed
+                </span>
+              ) : liveMandi && !liveMandi.available ? (
+                <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-amber-100 text-amber-800 border border-amber-300">
+                  Offline Estimate
+                </span>
+              ) : null}
+            </div>
+            <p className="text-xs text-slate-500 mt-0.5">
+              {liveMandi?.available && matchingLiveRecord
+                ? `Official APMC rates for ${matchingLiveRecord.market || 'Indore'} (${matchingLiveRecord.district || 'Indore'})`
+                : 'e-NAM & Mandi Feeds vs Local Trader Offers'}
+            </p>
           </div>
 
           <div className="flex items-center gap-1">
@@ -265,29 +307,59 @@ export const FarmerDashboard: React.FC<FarmerDashboardProps> = ({
           </div>
         </div>
 
+        {/* Fallback Message if Mandi Feed is Unavailable */}
+        {liveMandi && !liveMandi.available && (
+          <div className="p-3 bg-amber-50/80 border border-amber-200 rounded-xl text-xs text-amber-800 flex items-center gap-2">
+            <AlertCircle className="w-4 h-4 text-amber-600 shrink-0" />
+            <span>Government mandi feed unavailable: displaying regional model estimate.</span>
+          </div>
+        )}
+
         <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
-          <div className="p-3 bg-slate-50 rounded-xl border border-slate-200">
-            <span className="text-[11px] text-slate-500 block">Indore APMC Mandi Range</span>
-            <span className="text-base font-bold text-slate-900 mt-0.5 block">
-              ₹{benchmark.mandiBenchmarkMin.toFixed(2)} – ₹{benchmark.mandiBenchmarkMax.toFixed(2)}
+          {/* Box 1: Mandi Price / Range */}
+          <div className="p-3.5 bg-slate-50 rounded-xl border border-slate-200">
+            <span className="text-[11px] text-slate-500 block">
+              {liveMandi?.available && matchingLiveRecord
+                ? `${matchingLiveRecord.market} APMC Rate`
+                : 'Indore APMC Mandi Range'}
             </span>
-            <span className="text-[10px] text-slate-400">Choithram Yard auction band</span>
+            <div className="mt-1">
+              {liveMandi?.available && matchingLiveRecord ? (
+                <div>
+                  <div className="text-lg font-black text-slate-900 font-display">
+                    ₹{matchingLiveRecord.modal_price_per_kg || (Number(matchingLiveRecord.modal_price) / 100).toFixed(2)} <span className="text-xs font-semibold text-emerald-700">/ kg Modal</span>
+                  </div>
+                  <div className="text-[11px] text-slate-500 font-mono mt-0.5">
+                    Min: ₹{matchingLiveRecord.min_price_per_kg || (Number(matchingLiveRecord.min_price) / 100).toFixed(2)} &bull; Max: ₹{matchingLiveRecord.max_price_per_kg || (Number(matchingLiveRecord.max_price) / 100).toFixed(2)}
+                  </div>
+                </div>
+              ) : (
+                <div>
+                  <div className="text-lg font-black text-slate-900 font-display">
+                    ₹{benchmark.mandiBenchmarkMin.toFixed(2)} – ₹{benchmark.mandiBenchmarkMax.toFixed(2)}
+                  </div>
+                  <div className="text-[10px] text-slate-400 mt-0.5">Choithram Yard auction band</div>
+                </div>
+              )}
+            </div>
           </div>
 
-          <div className="p-3 bg-rose-50 rounded-xl border border-rose-200">
+          {/* Box 2: Local Trader Offering */}
+          <div className="p-3.5 bg-rose-50/80 rounded-xl border border-rose-200">
             <span className="text-[11px] text-rose-700 block font-medium">Local Trader Offering</span>
-            <span className="text-base font-bold text-rose-800 mt-0.5 block">
-              ₹{benchmark.currentTraderOffer.toFixed(2)} / kg
-            </span>
-            <span className="text-[10px] text-rose-600 font-semibold">Below market benchmark</span>
+            <div className="text-lg font-black text-rose-800 mt-1 font-display">
+              ₹{benchmark.currentTraderOffer.toFixed(2)} <span className="text-xs font-semibold">/ kg</span>
+            </div>
+            <span className="text-[10px] text-rose-600 font-semibold block mt-0.5">Below official APMC modal benchmark</span>
           </div>
 
-          <div className="p-3 bg-emerald-50 rounded-xl border border-emerald-200">
+          {/* Box 3: Bargaining Gap Discovered */}
+          <div className="p-3.5 bg-emerald-50/80 rounded-xl border border-emerald-200">
             <span className="text-[11px] text-emerald-800 block font-medium">Bargaining Gap Discovered</span>
-            <span className="text-base font-bold text-emerald-700 mt-0.5 block font-display">
-              +₹{benchmark.potentialBargainingGap.toFixed(2)} / kg
-            </span>
-            <span className="text-[10px] text-emerald-700 font-semibold">AgriChain compiles higher net</span>
+            <div className="text-lg font-black text-emerald-700 mt-1 font-display">
+              +₹{benchmark.potentialBargainingGap.toFixed(2)} <span className="text-xs font-semibold">/ kg</span>
+            </div>
+            <span className="text-[10px] text-emerald-700 font-semibold block mt-0.5">AgriChain compiles higher net</span>
           </div>
         </div>
       </div>

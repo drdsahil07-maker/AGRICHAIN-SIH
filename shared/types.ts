@@ -232,6 +232,7 @@ export interface PriceBenchmark {
   location: string;
   mandiBenchmarkMin: number;
   mandiBenchmarkMax: number;
+  enamModalPrice?: number;
   currentTraderOffer: number;
   suggestedFairBandMin: number;
   suggestedFairBandMax: number;
@@ -325,6 +326,7 @@ export interface AuthSessionUser {
   phone?: string;
   email?: string;
   location?: string;
+  token?: string;
   details?: Record<string, any>;
 }
 

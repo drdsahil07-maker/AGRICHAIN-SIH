@@ -15,6 +15,8 @@ import serviceProviderRoutes from './serviceProvider.routes';
 import priceRoutes from './price.routes';
 import governmentRoutes from './government.routes';
 import orderRoutes from './order.routes';
+import mandiRoutes from './mandi.routes';
+import { getMandiPrices } from '../controllers/mandi.controller';
 
 const router = Router();
 
@@ -33,5 +35,7 @@ router.use('/service-providers', serviceProviderRoutes);
 router.use('/prices', priceRoutes);
 router.use('/government', governmentRoutes);
 router.use('/orders', orderRoutes);
+router.use('/mandi', mandiRoutes);
+router.get('/mandi-prices', getMandiPrices);
 
 export default router;

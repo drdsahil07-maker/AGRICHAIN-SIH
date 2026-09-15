@@ -589,7 +589,7 @@ export const ConsumerDashboardPage: React.FC = () => {
                   {produceList.slice(0, 4).map((item) => (
                     <div 
                       key={item.id}
-                      className="p-4 rounded-2xl border border-slate-200 hover:border-indigo-400 bg-slate-50/50 hover:bg-white transition-all space-y-3 flex flex-col justify-between"
+                      className="p-4 rounded-2xl border border-slate-200 hover:border-indigo-400 bg-white transition-all space-y-3 flex flex-col justify-between shadow-xs"
                     >
                       <div>
                         <div className="flex items-start justify-between gap-2">
@@ -765,7 +765,7 @@ export const ConsumerDashboardPage: React.FC = () => {
                 {produceList.map((item) => (
                   <div 
                     key={item.id} 
-                    className="bg-slate-50/70 hover:bg-white border border-slate-200 hover:border-indigo-400 rounded-2xl p-5 transition-all shadow-xs hover:shadow-md flex flex-col justify-between space-y-4"
+                    className="bg-white hover:border-indigo-400 border border-slate-200 rounded-2xl p-5 transition-all shadow-xs hover:shadow-md flex flex-col justify-between space-y-4"
                   >
                     <div className="space-y-2.5">
                       <div className="flex items-start justify-between">

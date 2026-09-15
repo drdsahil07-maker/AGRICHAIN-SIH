@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { 
   SlidersHorizontal, 
   ShieldCheck, 
@@ -17,7 +18,8 @@ import {
   ShoppingBag,
   Shield,
   Layers,
-  UtensilsCrossed
+  UtensilsCrossed,
+  LogOut
 } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 import { supabase, checkSupabaseConnection } from '../lib/supabase';
@@ -27,7 +29,8 @@ import { Package } from 'lucide-react';
 import { UserProfile, AppUserRole } from '../../../shared/types';
 
 export const AdminCommandCenter: React.FC = () => {
-  const { userProfile, role, switchRole, setIsAuthModalOpen } = useAuth();
+  const navigate = useNavigate();
+  const { userProfile, role, switchRole, setIsAuthModalOpen, logout } = useAuth();
   const [usersList, setUsersList] = useState<UserProfile[]>([]);
   const [dbStats, setDbStats] = useState({
     harvests: 0,
@@ -112,8 +115,8 @@ export const AdminCommandCenter: React.FC = () => {
           <div className="bg-white border border-slate-200 rounded-2xl p-3 shadow-xs flex items-center gap-3">
             <div className={`w-3 h-3 rounded-full ${isDbOnline ? 'bg-emerald-500 animate-pulse' : 'bg-amber-500'}`} />
             <div className="text-left text-xs">
-              <span className="font-bold text-slate-900 block">Supabase Cloud</span>
-              <span className="text-[11px] text-slate-500 font-mono">abjhusvnynwvjbiwtxho</span>
+              <span className="font-bold text-slate-900 block">Cloud Data Node</span>
+              <span className="text-[11px] text-slate-500 font-mono">Real-time Cluster Active</span>
             </div>
             <button
               type="button"
@@ -133,6 +136,23 @@ export const AdminCommandCenter: React.FC = () => {
           >
             <Users className="w-3.5 h-3.5" />
             <span>Switch Role</span>
+          </button>
+
+          <button
+            type="button"
+            onClick={async () => {
+              try {
+                await logout();
+              } catch (e) {
+                console.warn('Logout note:', e);
+              }
+              navigate('/choose-role');
+            }}
+            className="bg-white hover:bg-rose-50 text-rose-700 hover:text-rose-800 border border-slate-200 hover:border-rose-200 font-bold text-xs px-4 py-3 rounded-2xl shadow-xs cursor-pointer flex items-center gap-2 transition-all"
+            title="Sign out"
+          >
+            <LogOut className="w-3.5 h-3.5" />
+            <span>Logout</span>
           </button>
         </div>
       </div>

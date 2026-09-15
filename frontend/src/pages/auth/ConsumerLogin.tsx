@@ -28,6 +28,27 @@ export const ConsumerLogin: React.FC = () => {
   const [resetError, setResetError] = useState<string | null>(null);
   const [resetLoading, setResetLoading] = useState(false);
 
+  const handleFillDemo = async (autoSubmit: boolean = false) => {
+    setIdentifier('consumer@agrichain.com');
+    setPassword('Password123!');
+    setError(null);
+    if (autoSubmit) {
+      setLoading(true);
+      try {
+        const result = await login('consumer@agrichain.com', 'Password123!', 'consumer');
+        setLoading(false);
+        if (result.success) {
+          navigate('/consumer/dashboard');
+        } else {
+          setError(result.error || 'Failed to sign in as Consumer.');
+        }
+      } catch (err: any) {
+        setLoading(false);
+        setError(err?.message || 'Failed to sign in.');
+      }
+    }
+  };
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError(null);
@@ -93,6 +114,35 @@ export const ConsumerLogin: React.FC = () => {
 
         {/* Login Card */}
         <div className="bg-white py-8 px-6 sm:px-8 shadow-md border border-slate-200 rounded-3xl space-y-5">
+          {/* Demo Credentials Box */}
+          <div className="p-3.5 bg-indigo-50/80 border border-indigo-200 rounded-2xl flex flex-col sm:flex-row sm:items-center justify-between gap-3 text-xs">
+            <div>
+              <div className="font-bold text-indigo-950 flex items-center gap-1.5">
+                <span className="w-2 h-2 rounded-full bg-indigo-500 animate-pulse"></span>
+                <span>Consumer Demo Credentials</span>
+              </div>
+              <div className="text-indigo-800 font-mono text-[11px] mt-0.5 select-all">
+                Email: <strong>consumer@agrichain.com</strong> &bull; Pass: <strong>Password123!</strong>
+              </div>
+            </div>
+            <div className="flex items-center gap-1.5 shrink-0">
+              <button
+                type="button"
+                onClick={() => handleFillDemo(false)}
+                className="px-2.5 py-1 bg-white hover:bg-indigo-100 text-indigo-900 font-bold text-[11px] rounded-lg border border-indigo-300 transition-colors cursor-pointer"
+              >
+                Auto-Fill
+              </button>
+              <button
+                type="button"
+                onClick={() => handleFillDemo(true)}
+                className="px-2.5 py-1 bg-indigo-600 hover:bg-indigo-700 text-white font-bold text-[11px] rounded-lg shadow-xs transition-colors cursor-pointer"
+              >
+                1-Click Login
+              </button>
+            </div>
+          </div>
+
           {error && (
             <div className="p-3 bg-red-50 border border-red-200 rounded-xl text-red-700 text-xs flex items-center gap-2">
               <AlertCircle className="w-4 h-4 shrink-0" />

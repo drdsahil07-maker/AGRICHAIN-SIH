@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { 
   Sprout, 
@@ -17,6 +17,7 @@ import {
   DollarSign, 
   CheckCircle2, 
   AlertTriangle, 
+  AlertCircle,
   Truck, 
   ShieldCheck, 
   PhoneCall, 
@@ -38,6 +39,7 @@ import { QualityVerificationView } from '../../components/QualityVerificationVie
 import { DynamicPoolingView } from '../../components/DynamicPoolingView';
 import { AccountMenu } from '../../components/AccountMenu';
 import { useOrders } from '../../hooks/useOrders';
+import { api } from '../../services/api';
 
 export const FarmerDashboardPage: React.FC = () => {
   const navigate = useNavigate();
@@ -101,6 +103,28 @@ export const FarmerDashboardPage: React.FC = () => {
       traditionalNetInHand: 12.60
     }
   });
+
+  // Live Mandi Data
+  const [liveMandi, setLiveMandi] = useState<{
+    available: boolean;
+    records?: any[];
+    message?: string;
+    lastUpdated?: string;
+  } | null>(null);
+
+  useEffect(() => {
+    api.getMandiPrices({ commodity: selectedProduce.crop })
+      .then((res) => {
+        setLiveMandi(res);
+      })
+      .catch(() => {
+        setLiveMandi({ available: false, message: 'Government mandi feed unavailable' });
+      });
+  }, [selectedProduce.crop]);
+
+  const activeMandiRecord = liveMandi?.records?.find(
+    (r: any) => r.commodity?.toLowerCase().includes(selectedProduce.crop.toLowerCase())
+  ) || liveMandi?.records?.[0];
 
   const handleLogout = () => {
     authService.logout();
@@ -381,20 +405,54 @@ export const FarmerDashboardPage: React.FC = () => {
                       🏛️
                     </div>
                     <div>
-                      <h3 className="text-sm font-bold text-slate-900">Latest Government Mandi Price</h3>
-                      <p className="text-[11px] text-slate-500">{selectedProduce.governmentMandiPrice.location}</p>
+                      <h3 className="text-sm font-bold text-slate-900">
+                        {liveMandi?.available && activeMandiRecord
+                          ? `${activeMandiRecord.market} APMC Rate`
+                          : 'Nearby Mandi Benchmark Prices'}
+                      </h3>
+                      <p className="text-[11px] text-slate-500">
+                        {liveMandi?.available && activeMandiRecord
+                          ? `${activeMandiRecord.district || 'Indore'}, ${activeMandiRecord.state || 'Madhya Pradesh'}`
+                          : selectedProduce.governmentMandiPrice.location}
+                      </p>
                     </div>
                   </div>
-                  <span className="text-xs font-mono font-bold text-slate-700 bg-white px-2 py-1 rounded border border-slate-200">
-                    Live APMC
-                  </span>
+                  {liveMandi?.available && activeMandiRecord ? (
+                    <span className="inline-flex items-center gap-1 text-[10px] font-bold px-2 py-0.5 rounded-full bg-emerald-100 text-emerald-800 border border-emerald-300">
+                      <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse"></span>
+                      LIVE APMC Feed
+                    </span>
+                  ) : (
+                    <span className="text-xs font-mono font-bold text-slate-700 bg-white px-2 py-1 rounded border border-slate-200">
+                      Model Estimate
+                    </span>
+                  )}
                 </div>
+
+                {liveMandi && !liveMandi.available && (
+                  <div className="p-2.5 bg-amber-50 border border-amber-200 rounded-xl text-[11px] text-amber-800 flex items-center gap-2">
+                    <AlertCircle className="w-3.5 h-3.5 text-amber-600 shrink-0" />
+                    <span>Government mandi feed unavailable: displaying regional model estimate.</span>
+                  </div>
+                )}
 
                 <div className="bg-white rounded-xl p-3.5 border border-slate-200 space-y-3">
                   <div className="flex items-center justify-between">
                     <span className="text-xs text-slate-500">Mandi Displayed Gross Price:</span>
-                    <span className="text-sm font-bold text-slate-900 font-mono">₹{selectedProduce.governmentMandiPrice.modalPrice.toFixed(2)} / KG</span>
+                    <span className="text-sm font-bold text-slate-900 font-mono">
+                      ₹{liveMandi?.available && activeMandiRecord
+                        ? (activeMandiRecord.modal_price_per_kg || (Number(activeMandiRecord.modal_price) / 100)).toFixed(2)
+                        : selectedProduce.governmentMandiPrice.modalPrice.toFixed(2)} / KG
+                    </span>
                   </div>
+
+                  {liveMandi?.available && activeMandiRecord && (
+                    <div className="flex items-center justify-between text-[11px] text-slate-500 bg-slate-50 p-2 rounded-lg font-mono">
+                      <span>Min: ₹{(activeMandiRecord.min_price_per_kg || (Number(activeMandiRecord.min_price) / 100)).toFixed(2)}/kg</span>
+                      <span>Modal: ₹{(activeMandiRecord.modal_price_per_kg || (Number(activeMandiRecord.modal_price) / 100)).toFixed(2)}/kg</span>
+                      <span>Max: ₹{(activeMandiRecord.max_price_per_kg || (Number(activeMandiRecord.max_price) / 100)).toFixed(2)}/kg</span>
+                    </div>
+                  )}
 
                   <div className="border-t border-dashed border-slate-200 pt-2.5 space-y-1.5 text-[11px] text-slate-500">
                     <div className="flex justify-between">
@@ -417,7 +475,9 @@ export const FarmerDashboardPage: React.FC = () => {
 
                   <div className="border-t border-slate-200 pt-2 flex items-center justify-between">
                     <span className="text-xs font-bold text-slate-700">Actual Mandi Net to Farmer:</span>
-                    <span className="text-base font-black text-amber-700 font-mono">₹{selectedProduce.governmentMandiPrice.traditionalNetInHand.toFixed(2)} / KG</span>
+                    <span className="text-base font-black text-amber-700 font-mono">
+                      ₹{selectedProduce.governmentMandiPrice.traditionalNetInHand.toFixed(2)} / KG
+                    </span>
                   </div>
                 </div>
               </div>

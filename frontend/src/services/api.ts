@@ -314,6 +314,37 @@ export const api = {
     return SEED_PRICE_BENCHMARKS;
   },
 
+  async getMandiPrices(filters?: { commodity?: string; state?: string; district?: string }): Promise<{
+    success: boolean;
+    available: boolean;
+    records: any[];
+    error?: string;
+    message?: string;
+    lastUpdated?: string;
+    source?: string;
+  }> {
+    try {
+      const params = new URLSearchParams();
+      if (filters?.commodity) params.append('commodity', filters.commodity);
+      if (filters?.state) params.append('state', filters.state);
+      if (filters?.district) params.append('district', filters.district);
+      const queryString = params.toString() ? `?${params.toString()}` : '';
+      const res = await fetchWithAuth(`/api/mandi/prices${queryString}`);
+      if (res.ok) {
+        return await res.json();
+      }
+    } catch (e) {
+      console.warn('Mandi prices fetch error:', e);
+    }
+    return {
+      success: false,
+      available: false,
+      error: 'Government mandi feed unavailable',
+      message: 'Government mandi feed unavailable',
+      records: []
+    };
+  },
+
   async analyzeQuality(crop: string, base64Image?: string, sampleType: 'grade_a' | 'grade_b' = 'grade_a'): Promise<QualityAnalysisResult> {
     try {
       const res = await fetchWithAuth('/api/quality/analyze', {

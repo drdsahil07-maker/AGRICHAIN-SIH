@@ -11,6 +11,7 @@ import { FarmerLogin } from './pages/auth/FarmerLogin';
 import { DistributorLogin } from './pages/auth/DistributorLogin';
 import { TransporterLogin } from './pages/auth/TransporterLogin';
 import { ConsumerLogin } from './pages/auth/ConsumerLogin';
+import { GovernmentLogin } from './pages/auth/GovernmentLogin';
 import { FarmerRegister } from './pages/auth/FarmerRegister';
 import { DistributorRegister } from './pages/auth/DistributorRegister';
 import { TransporterRegister } from './pages/auth/TransporterRegister';
@@ -42,6 +43,7 @@ createRoot(document.getElementById('root')!).render(
           <Route path="/login/distributor" element={<DistributorLogin />} />
           <Route path="/login/transporter" element={<TransporterLogin />} />
           <Route path="/login/consumer" element={<ConsumerLogin />} />
+          <Route path="/login/government" element={<GovernmentLogin />} />
           
           <Route path="/register/farmer" element={<FarmerRegister />} />
           <Route path="/register/distributor" element={<DistributorRegister />} />
